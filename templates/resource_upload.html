@@ -1,5 +1,8 @@
-{% extends "base.html" %} {% block title %}上传资源 - 学习资源管理系统{%
-endblock %} {% block content %}
+{% extends "base.html" %}
+
+{% block title %}上传资源 - 学习资源管理系统{% endblock %}
+
+{% block content %}
 <div class="page-header">
   <div>
     <h1><i class="ri-upload-cloud-2-line"></i>上传资源</h1>
@@ -389,7 +392,9 @@ endblock %} {% block content %}
     </div>
   </div>
 </div>
-{% endblock %} {% block scripts %}
+{% endblock %}
+
+{% block scripts %}
 <script src="{{ url_for('static', filename='js/upload-ai.js') }}"></script>
 <script>
   function switchTab(name) {
