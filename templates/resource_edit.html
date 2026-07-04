@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}编辑资源 - 学习资源管理系统{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('home') }}">首页</a>
+    <i class="ri-arrow-right-s-line"></i>
+    <a href="{{ url_for('resource_all') }}">资源</a>
+    <i class="ri-arrow-right-s-line"></i>
+    <a href="{{ url_for('resource_detail', id=resource.code) }}">{{ resource.title }}</a>
+    <i class="ri-arrow-right-s-line"></i>
+    <span class="current">编辑</span>
+</div>
+<div class="page-header">
+  <div>
+    <h1><i class="ri-edit-line"></i>编辑资源</h1>
+    <p class="page-subtitle">{{ resource.title }}</p>
+  </div>
+</div>
+
+<div class="grid-2-wide">
+  <div class="card">
+    <div class="card-body">
+      <form method="post" action="{{ url_for('resource_edit', resource_id=resource.code) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+          <label for="title">资源标题 <span class="required">*</span></label>
+          <input type="text" id="title" name="title" class="form-control" value="{{ resource.title }}" required>
+        </div>
+
+        <div class="form-group">
+          <label for="description">资源描述</label>
+          <textarea id="description" name="description" class="form-control" rows="4" placeholder="输入资源描述">{{ resource.description or '' }}</textarea>
+        </div>
+
+        <div class="form-group">
+          <label>文件</label>
+          <div style="padding:8px 12px;background:var(--bg-alt);border-radius:var(--radius-xs);font-size:.85rem;color:var(--text-secondary);">
+            <i class="ri-file-line"></i> {{ resource.original_filename }}（{{ resource.file_size | filesize }}）
+          </div>
+        </div>
+
+        <div class="category-section" style="margin-top:16px;">
+          {% for tax in taxonomies %}
+          <div class="form-group">
+            <label>{{ tax.name }}</label>
+            <select name="cat_{{ tax.slug }}" class="form-control">
+              <option value="">不选择</option>
+              {% for cat in tax.categories %}
+              <option value="{{ cat.id }}" {% if resource_cats.get(tax.slug) and cat.id in resource_cats[tax.slug].terms|map(attribute='id')|list %}selected{% endif %}>{{ cat.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:20px;">
+          <button type="submit" class="btn btn-primary"><i class="ri-save-line"></i> 保存修改</button>
+          <a href="{{ url_for('resource_detail', id=resource.code) }}" class="btn btn-outline">取消</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-header"><h2><i class="ri-information-line"></i> 提示</h2></div>
+      <div class="card-body" style="font-size:.85rem;color:var(--text-secondary);line-height:1.7;">
+        <p>修改标题、描述或分类后点击"保存修改"即可更新。</p>
+        <p style="margin-top:8px;">如需替换文件，请删除当前资源后重新上传。</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

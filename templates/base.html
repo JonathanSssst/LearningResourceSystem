@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}学习资源管理系统{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="{{ url_for('static', filename='css/remixicon.css') }}" rel="stylesheet">
+</head>
+<body>
+    {% if session.get('user_id') %}
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="nav-inner">
+            <a href="{{ url_for('home') }}" class="nav-logo">
+                <span class="logo-icon"><img src="{{ url_for('static', filename='favicon.svg') }}" alt="LRS" style="width:36px;height:36px;display:block;border-radius:8px"></span>
+                <span>LRS</span>
+            </a>
+
+            <button class="mobile-toggle" onclick="toggleMobileNav()" aria-label="菜单">
+                <i class="ri-menu-line"></i>
+            </button>
+
+            <div class="nav-links">
+                <a href="{{ url_for('home') }}" class="nav-link {% if request.endpoint == 'home' %}active{% endif %}">
+                    <i class="ri-home-4-line"></i> 首页
+                </a>
+                <a href="{{ url_for('resource_all') }}" class="nav-link {% if request.endpoint in ('resource_all', 'resource_detail', 'resource_latests', 'resource_ranks') %}active{% endif %}">
+                    <i class="ri-folder-line"></i> 资源
+                </a>
+                <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                    <i class="ri-bar-chart-line"></i> 分析
+                </a>
+                <a href="{{ url_for('favorites') }}" class="nav-link {% if request.endpoint == 'favorites' %}active{% endif %}">
+                    <i class="ri-star-line"></i> 收藏
+                </a>
+                <a href="{{ url_for('categories') }}" class="nav-link {% if request.endpoint == 'categories' %}active{% endif %}">
+                    <i class="ri-price-tag-3-line"></i> 分类
+                </a>
+                {% if session.get('role') == 'admin' %}<a href="{{ url_for('admin_pending') }}" class="nav-link {% if request.endpoint == 'admin_pending' %}active{% endif %}">
+                    <i class="ri-check-line"></i> 待审核{% if pending_count > 0 %}<span style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--danger);color:#fff;font-size:.68rem;font-weight:600;margin-left:4px;">{{ pending_count }}</span>{% endif %}
+                </a>
+                <a href="{{ url_for('admin_users') }}" class="nav-link {% if request.endpoint == 'admin_users' %}active{% endif %}">
+                    <i class="ri-user-settings-line"></i> 用户
+                </a>{% endif %}
+                <a href="{{ url_for('resource_upload') }}" class="nav-link">
+                    <i class="ri-upload-cloud-2-line"></i> 上传
+                </a>
+            </div>
+
+            <div class="nav-actions">
+                <form class="nav-search" action="{{ url_for('search') }}" method="get">
+                    <i class="ri-search-line"></i>
+                    <input type="text" name="q" placeholder="搜索资源..." value="{{ request.args.get('q', '') }}">
+                </form>
+                <button class="nav-search-btn" onclick="if(typeof toggleMobileNav==='function')toggleMobileNav();setTimeout(function(){var i=document.querySelector('#mobileNav .nav-search input');if(i)i.focus();},200)" title="搜索" aria-label="搜索">
+                    <i class="ri-search-line"></i>
+                </button>
+                <a href="{{ url_for('profile') }}" class="nav-user" title="个人设置">
+                    <span class="avatar"><i class="ri-user-line"></i></span>
+                    <span class="username">{{ session.get('username', '用户') }}</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="nav-link" style="padding:6px 10px;" title="退出登录" aria-label="退出登录">
+                    <i class="ri-logout-box-r-line"></i>
+                </a>
+                <button class="nav-link theme-btn" onclick="toggleTheme()" title="切换暗色模式" aria-label="切换暗色模式" style="padding:6px 10px;border:none;cursor:pointer;background:none;">
+                    <i class="ri-moon-line"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Nav -->
+    <div class="mobile-nav" id="mobileNav">
+        <div class="mobile-nav-panel">
+            <div class="mobile-nav-header">
+                <a href="{{ url_for('home') }}" class="nav-logo">
+                <span class="logo-icon"><img src="{{ url_for('static', filename='favicon.svg') }}" alt="LRS" style="width:36px;height:36px;display:block;border-radius:8px"></span>
+                    <span>LRS</span>
+                </a>
+                <button class="mobile-nav-close" onclick="toggleMobileNav()">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="mobile-nav-links">
+                <form class="nav-search" action="{{ url_for('search') }}" method="get" style="margin-bottom:12px;width:100%;">
+                    <i class="ri-search-line" style="position:absolute;left:14px;color:var(--text-muted);font-size:.95rem;pointer-events:none;"></i>
+                    <input type="text" name="q" placeholder="搜索资源..." value="{{ request.args.get('q', '') }}" style="width:100%;padding:10px 12px 10px 38px;border:1px solid var(--border);border-radius:var(--radius-xs);font-size:.85rem;outline:none;background:var(--bg);">
+                </form>
+                <a href="{{ url_for('home') }}" class="mobile-nav-link {% if request.endpoint == 'home' %}active{% endif %}">
+                    <i class="ri-home-4-line"></i> 首页
+                </a>
+                <a href="{{ url_for('resource_all') }}" class="mobile-nav-link {% if request.endpoint in ('resource_all', 'resource_detail', 'resource_latests', 'resource_ranks') %}active{% endif %}">
+                    <i class="ri-folder-line"></i> 全部资源
+                </a>
+                <a href="{{ url_for('resource_latests') }}" class="mobile-nav-link {% if request.endpoint == 'resource_latests' %}active{% endif %}">
+                    <i class="ri-time-line"></i> 最新上传
+                </a>
+                <a href="{{ url_for('resource_ranks') }}" class="mobile-nav-link {% if request.endpoint == 'resource_ranks' %}active{% endif %}">
+                    <i class="ri-bar-chart-box-line"></i> 资源排行
+                </a>
+                <a href="{{ url_for('dashboard') }}" class="mobile-nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                    <i class="ri-bar-chart-line"></i> 数据分析
+                </a>
+                <a href="{{ url_for('favorites') }}" class="mobile-nav-link {% if request.endpoint == 'favorites' %}active{% endif %}">
+                    <i class="ri-star-line"></i> 我的收藏
+                </a>
+                <a href="{{ url_for('categories') }}" class="mobile-nav-link {% if request.endpoint == 'categories' %}active{% endif %}">
+                    <i class="ri-price-tag-3-line"></i> 分类
+                </a>
+                {% if session.get('role') == 'admin' %}<a href="{{ url_for('admin_pending') }}" class="mobile-nav-link {% if request.endpoint == 'admin_pending' %}active{% endif %}">
+                    <i class="ri-check-line"></i> 待审核{% if pending_count > 0 %}<span style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--danger);color:#fff;font-size:.68rem;font-weight:600;margin-left:4px;">{{ pending_count }}</span>{% endif %}
+                </a>
+                <a href="{{ url_for('admin_users') }}" class="mobile-nav-link">
+                    <i class="ri-user-settings-line"></i> 用户管理
+                </a>{% endif %}
+                <a href="{{ url_for('profile') }}" class="mobile-nav-link">
+                    <i class="ri-user-settings-line"></i> 个人设置
+                </a>
+                <a href="{{ url_for('resource_upload') }}" class="mobile-nav-link" style="color: var(--primary);">
+                    <i class="ri-upload-cloud-2-line"></i> 上传资源
+                </a>
+                <a href="{{ url_for('logout') }}" class="mobile-nav-link" style="color: var(--danger);">
+                    <i class="ri-logout-box-r-line"></i> 退出登录
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Content -->
+    <div class="page">
+        {% block breadcrumb %}{% endblock %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <i class="ri-{{ 'checkbox-circle' if category == 'success' else 'error-warning' if category == 'error' else 'information' }}-line"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <div class="kbd-hint" onclick="showShortcuts()" title="快捷键">⌨ <span class="kbd-label">?</span></div>
+
+    <div class="shortcuts-overlay" id="shortcutsOverlay" onclick="closeShortcuts(event)">
+      <div class="shortcuts-panel">
+        <div class="shortcuts-header"><span>快捷键</span><button class="shortcuts-close" onclick="closeShortcuts()">✕</button></div>
+        <div class="shortcuts-body">
+          <div class="shortcut-row"><kbd>s</kbd> <span>搜索资源</span></div>
+          <div class="shortcut-row"><kbd>u</kbd> <span>上传资源</span></div>
+          <div class="shortcut-row"><kbd>h</kbd> <span>回到首页</span></div>
+          <div class="shortcut-row"><kbd>?</kbd> <span>显示此帮助</span></div>
+        </div>
+      </div>
+    </div>
+
+    {% else %}
+        {% block auth_content %}{% endblock %}
+    {% endif %}
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+(function(){
+  var t = localStorage.getItem('theme');
+  if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme:dark)').matches)) {
+    document.documentElement.setAttribute('data-theme','dark');
+    var icons = document.querySelectorAll('.theme-btn i');
+    for (var i=0;i<icons.length;i++) icons[i].className = 'ri-sun-line';
+  }
+})();
+function toggleTheme(){
+  var d = document.documentElement;
+  var isDark = d.getAttribute('data-theme') === 'dark';
+  if (isDark) { d.removeAttribute('data-theme'); localStorage.setItem('theme','light'); }
+  else { d.setAttribute('data-theme','dark'); localStorage.setItem('theme','dark'); }
+  var icons = document.querySelectorAll('.theme-btn i');
+  for (var i=0;i<icons.length;i++) icons[i].className = isDark ? 'ri-moon-line' : 'ri-sun-line';
+}
+document.addEventListener('keydown',function(e){
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 's' && !e.ctrlKey && !e.metaKey) {
+    e.preventDefault();
+    var inp = document.querySelector('.nav-search input');
+    if (inp) { if (window.innerWidth <= 480) { if(typeof toggleMobileNav==='function')toggleMobileNav(); setTimeout(function(){var i=document.querySelector('#mobileNav .nav-search input');if(i)i.focus();},200); } else inp.focus(); }
+  }
+  if (e.key === 'u' && !e.ctrlKey && !e.metaKey) {
+    e.preventDefault();
+    var link = document.querySelector('a[href*="resource/upload"]');
+    if (link) link.click();
+  }
+  if (e.key === 'h' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); window.location.href = '{{ url_for("home") }}'; }
+  if (e.key === '?') { e.preventDefault(); showShortcuts(); }
+});
+function showShortcuts(){ document.getElementById('shortcutsOverlay').classList.add('active'); }
+function closeShortcuts(e){ if(!e || e.target===document.getElementById('shortcutsOverlay')) document.getElementById('shortcutsOverlay').classList.remove('active'); }
+</script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

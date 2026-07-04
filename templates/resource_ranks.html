@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}资源排行 - 学习资源管理系统{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1><i class="ri-bar-chart-box-line"></i>资源排行榜</h1>
+        <p class="page-subtitle">查看最受欢迎的学习资源</p>
+    </div>
+</div>
+
+<div class="rank-tabs">
+    <div class="rank-tab active" data-tab="downloads"><i class="ri-download-line"></i> 下载排行</div>
+    <div class="rank-tab" data-tab="views"><i class="ri-eye-line"></i> 浏览排行</div>
+    <div class="rank-tab" data-tab="favorites"><i class="ri-star-line"></i> 收藏排行</div>
+</div>
+
+<div class="rank-content">
+    <div class="rank-panel active" id="panel-downloads">
+        <div class="card">
+            <div class="card-header"><h2><i class="ri-download-line"></i> 下载量排行榜 TOP 20</h2></div>
+            <div class="card-body">
+                <div class="rank-list">
+                    {% for resource in by_downloads %}
+                    <div class="rank-item">
+                        <div class="rank-number rank-{{ loop.index if loop.index <= 3 else 'other' }}">
+                            {% if loop.index == 1 %}<i class="ri-trophy-fill"></i>
+                            {% elif loop.index == 2 %}<i class="ri-medal-fill"></i>
+                            {% elif loop.index == 3 %}<i class="ri-award-fill"></i>
+                            {% else %}{{ loop.index }}{% endif %}
+                        </div>
+                        <div class="rank-icon badge-{{ resource.file_type }}">
+                            {% if resource.file_type == 'image' %}<i class="ri-image-line"></i>
+                            {% elif resource.file_type == 'video' %}<i class="ri-video-line"></i>
+                            {% elif resource.file_type == 'pdf' %}<i class="ri-file-pdf-line"></i>
+                            {% elif resource.file_type == 'doc' %}<i class="ri-file-word-line"></i>
+                            {% elif resource.file_type == 'code' %}<i class="ri-code-s-slash-line"></i>
+                            {% elif resource.file_type == 'archive' %}<i class="ri-file-zip-line"></i>
+                            {% else %}<i class="ri-file-line"></i>{% endif %}
+                        </div>
+                        <div class="rank-info">
+                            <h4><a href="{{ url_for('resource_detail', id=resource.code) }}">{{ resource.title }}</a></h4>
+                            <span class="rank-category">{{ resource.category_name or '未分类' }}</span>
+                        </div>
+                        <div class="rank-value"><span class="num">{{ resource.downloads }}</span><span class="lbl">次下载</span></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="rank-panel" id="panel-views">
+        <div class="card">
+            <div class="card-header"><h2><i class="ri-eye-line"></i> 浏览量排行榜 TOP 20</h2></div>
+            <div class="card-body">
+                <div class="rank-list">
+                    {% for resource in by_views %}
+                    <div class="rank-item">
+                        <div class="rank-number rank-{{ loop.index if loop.index <= 3 else 'other' }}">
+                            {% if loop.index == 1 %}<i class="ri-trophy-fill"></i>
+                            {% elif loop.index == 2 %}<i class="ri-medal-fill"></i>
+                            {% elif loop.index == 3 %}<i class="ri-award-fill"></i>
+                            {% else %}{{ loop.index }}{% endif %}
+                        </div>
+                        <div class="rank-icon badge-{{ resource.file_type }}">
+                            {% if resource.file_type == 'image' %}<i class="ri-image-line"></i>
+                            {% elif resource.file_type == 'video' %}<i class="ri-video-line"></i>
+                            {% elif resource.file_type == 'pdf' %}<i class="ri-file-pdf-line"></i>
+                            {% elif resource.file_type == 'doc' %}<i class="ri-file-word-line"></i>
+                            {% elif resource.file_type == 'code' %}<i class="ri-code-s-slash-line"></i>
+                            {% else %}<i class="ri-file-line"></i>{% endif %}
+                        </div>
+                        <div class="rank-info">
+                            <h4><a href="{{ url_for('resource_detail', id=resource.code) }}">{{ resource.title }}</a></h4>
+                            <span class="rank-category">{{ resource.category_name or '未分类' }}</span>
+                        </div>
+                        <div class="rank-value"><span class="num">{{ resource.views }}</span><span class="lbl">次浏览</span></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="rank-panel" id="panel-favorites">
+        <div class="card">
+            <div class="card-header"><h2><i class="ri-star-line"></i> 收藏量排行榜 TOP 20</h2></div>
+            <div class="card-body">
+                <div class="rank-list">
+                    {% for resource in by_favorites %}
+                    <div class="rank-item">
+                        <div class="rank-number rank-{{ loop.index if loop.index <= 3 else 'other' }}">
+                            {% if loop.index == 1 %}<i class="ri-trophy-fill"></i>
+                            {% elif loop.index == 2 %}<i class="ri-medal-fill"></i>
+                            {% elif loop.index == 3 %}<i class="ri-award-fill"></i>
+                            {% else %}{{ loop.index }}{% endif %}
+                        </div>
+                        <div class="rank-icon badge-{{ resource.file_type }}">
+                            {% if resource.file_type == 'image' %}<i class="ri-image-line"></i>
+                            {% elif resource.file_type == 'video' %}<i class="ri-video-line"></i>
+                            {% elif resource.file_type == 'pdf' %}<i class="ri-file-pdf-line"></i>
+                            {% elif resource.file_type == 'code' %}<i class="ri-code-s-slash-line"></i>
+                            {% else %}<i class="ri-file-line"></i>{% endif %}
+                        </div>
+                        <div class="rank-info">
+                            <h4><a href="{{ url_for('resource_detail', id=resource.code) }}">{{ resource.title }}</a></h4>
+                            <span class="rank-category">{{ resource.category_name or '未分类' }}</span>
+                        </div>
+                        <div class="rank-value"><span class="num">{{ resource.fav_count }}</span><span class="lbl">次收藏</span></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.rank-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        const name = this.dataset.tab;
+        document.querySelectorAll('.rank-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        document.querySelectorAll('.rank-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById('panel-' + name).classList.add('active');
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,705 @@
+{% extends "base.html" %} {% block title %}{{ resource.title }} -
+学习资源管理系统{% endblock %} {% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('home') }}">首页</a>
+  <i class="ri-arrow-right-s-line"></i>
+  <a href="{{ url_for('resource_all') }}">资源</a>
+  <i class="ri-arrow-right-s-line"></i>
+  <span class="current">{{ resource.title }}</span>
+</div>
+<div class="detail-header-card">
+  <div class="detail-icon badge-{{ resource.file_type }}">
+    {% if resource.file_type == 'image' %}<i class="ri-image-line"></i> {% elif
+    resource.file_type == 'video' %}<i class="ri-video-line"></i> {% elif
+    resource.file_type == 'audio' %}<i class="ri-music-line"></i> {% elif
+    resource.file_type == 'pdf' %}<i class="ri-file-pdf-line"></i> {% elif
+    resource.file_type == 'doc' %}<i class="ri-file-word-line"></i> {% elif
+    resource.file_type == 'code' %}<i class="ri-code-s-slash-line"></i> {% elif
+    resource.file_type == 'archive' %}<i class="ri-file-zip-line"></i> {% else
+    %}<i class="ri-file-line"></i>{% endif %}
+  </div>
+  <div class="detail-info">
+    <h1>
+      {{ resource.title }} {% if resource.status != 'approved' %}
+      <span
+        class="badge-{{ 'warning' if resource.status == 'pending' else 'danger' }}"
+        style="
+          display: inline-block;
+          padding: 1px 8px;
+          font-size: 0.7rem;
+          border-radius: 999px;
+          vertical-align: middle;
+          margin-left: 8px;
+        "
+        >{{ resource.status }}</span
+      >
+      {% endif %}
+    </h1>
+    <div class="detail-meta">
+      <span
+        ><i class="ri-user-line"></i> {{ resource.uploader or '未知' }}</span
+      >
+      <span
+        ><i class="ri-calendar-line"></i> {{ (resource.created_at |
+        utc_to_local(session.get('timezone','+08:00')))[:10] }}</span
+      >
+      <span
+        ><i class="ri-database-2-line"></i> {{ resource.file_size | filesize
+        }}</span
+      >
+    </div>
+  </div>
+  <div class="detail-actions">
+    <a
+      href="{{ url_for('resource_download', resource_id=resource.code) }}"
+      class="btn btn-primary"
+      ><i class="ri-download-line"></i> 下载</a
+    >
+    <a
+      href="{{ url_for('resource_preview', resource_id=resource.code) }}"
+      class="btn btn-outline"
+      ><i class="ri-eye-line"></i> 预览</a
+    >
+    <button
+      type="button"
+      class="btn btn-outline"
+      onclick="copyLink(this)"
+      title="复制链接"
+      aria-label="复制链接"
+    >
+      <i class="ri-share-line"></i> 复制链接
+    </button>
+    {% if can_edit %}<button
+      type="submit"
+      class="btn btn-outline"
+      onclick="window.location.href='{{ url_for('resource_edit', resource_id=resource.code) }}'"
+    >
+      <i class="ri-edit-line"></i> 编辑</button
+    >{% endif %}
+    <form
+      method="post"
+      action="{{ url_for('resource_favorite', resource_id=resource.code) }}"
+      style="display: inline"
+    >
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <button
+        type="submit"
+        class="btn {% if is_favorited %}btn-warning{% else %}btn-outline{% endif %}"
+      >
+        <i class="ri-star{{ '-fill' if is_favorited else '-line' }}"></i>
+        {% if is_favorited %}已收藏{% else %}收藏{% endif %}
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="detail-grid">
+  <div class="detail-main">
+    <div class="card">
+      <div class="card-header">
+        <h2><i class="ri-file-text-line"></i> 资源描述</h2>
+      </div>
+      <div class="card-body">
+        <p style="color: var(--text-secondary); line-height: 1.7">
+          {{ resource.description or '暂无详细描述' }}
+        </p>
+        {% if resource_cats %}
+        <div
+          style="
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+          "
+        >
+          {% for slug, group in resource_cats.items() %}
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              font-size: 0.8rem;
+            "
+          >
+            <span style="font-weight: 600; color: var(--text-secondary)"
+              >{{ group.name }}:</span
+            >
+            {% for cat in group.terms %}
+            <span
+              class="badge-{{ 'doc' if slug == 'file_type' else 'code' if slug == 'difficulty' else 'image' }}"
+              style="
+                padding: 2px 10px;
+                border-radius: 999px;
+                font-size: 0.75rem;
+                font-weight: 600;
+              "
+            >
+              {{ cat.name }}
+            </span>
+            {% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %} {% if tags %}
+        <div
+          style="
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+          "
+        >
+          {% for tag in tags %}
+          <span
+            style="
+              display: inline-flex;
+              align-items: center;
+              gap: 4px;
+              padding: 2px 10px;
+              border-radius: 999px;
+              background: var(--primary-light);
+              color: var(--primary);
+              font-size: 0.75rem;
+              font-weight: 500;
+            "
+          >
+            <i class="ri-price-tag-3-line" style="font-size: 0.7rem"></i>{{
+            tag.name }}
+          </span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Comments -->
+    <div class="card" style="margin-top: 20px">
+      <div class="card-header">
+        <h2>
+          <i class="ri-chat-3-line"></i> 评论与评分 {% if avg_rating and
+          avg_rating.count > 0 %}<span
+            style="
+              font-size: 0.82rem;
+              font-weight: 400;
+              color: var(--text-muted);
+              margin-left: 8px;
+            "
+            >平均 {{ '%.1f'|format(avg_rating.avg) }} / 5（{{ avg_rating.count
+            }} 条评论）</span
+          >{% endif %}
+        </h2>
+      </div>
+      <div class="card-body">
+        <form
+          method="post"
+          action="{{ url_for('resource_comment', resource_code=resource.code) }}"
+          style="margin-bottom: 20px"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div
+            style="
+              display: flex;
+              gap: 8px;
+              align-items: center;
+              margin-bottom: 8px;
+            "
+          >
+            <span style="font-size: 0.82rem; color: var(--text-secondary)"
+              >评分：</span
+            >
+            <div
+              class="star-rating"
+              style="
+                display: flex;
+                gap: 2px;
+                font-size: 1.2rem;
+                cursor: pointer;
+                direction: rtl;
+              "
+            >
+              {% for i in range(5,0,-1) %}
+              <span
+                class="star"
+                data-value="{{ i }}"
+                onclick="setRating(this,{{ i }})"
+                style="color:{% if i <= user_rating %}var(--warning){% else %}var(--border){% endif %};"
+                >★</span
+              >
+              {% endfor %}
+            </div>
+            <input
+              type="hidden"
+              name="rating"
+              id="ratingInput"
+              value="{{ user_rating }}"
+            />
+          </div>
+          <div class="form-group" style="margin: 0">
+            <textarea
+              name="content"
+              class="form-control"
+              rows="3"
+              placeholder="写下你的评论..."
+              required
+            ></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" style="margin-top: 8px">
+            <i class="ri-send-plane-line"></i> 提交评论
+          </button>
+        </form>
+
+        {% if comments %}
+        <div style="display: flex; flex-direction: column; gap: 12px">
+          {% for c in comments %}
+          <div
+            style="
+              padding: 12px;
+              background: var(--bg);
+              border-radius: var(--radius-sm);
+            "
+          >
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 4px;
+              "
+            >
+              <span style="font-size: 0.82rem; font-weight: 600"
+                >{{ c.username }}</span
+              >
+              <span style="font-size: 0.75rem; color: var(--text-muted)">
+                {% if c.rating > 0 %}<span style="color: var(--warning)"
+                  >{% for _ in range(c.rating) %}★{% endfor %}</span
+                >
+                · {% endif %} {{ (c.created_at |
+                utc_to_local(session.get('timezone','+08:00')))[:16] }}
+              </span>
+            </div>
+            <p
+              style="
+                font-size: 0.85rem;
+                color: var(--text-secondary);
+                margin: 0;
+              "
+            >
+              {{ c.content }}
+            </p>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div
+          style="
+            text-align: center;
+            padding: 16px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+          "
+        >
+          暂无评论，来写第一条评论吧
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-sidebar">
+    <div class="card">
+      <div class="card-header">
+        <h2><i class="ri-information-line"></i> 文件信息</h2>
+      </div>
+      <div class="card-body">
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">文件名</span
+            ><span class="info-value">{{ resource.original_filename }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">文件类型</span
+            ><span class="info-value">{{ resource.file_type | upper }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">文件大小</span
+            ><span class="info-value">{{ resource.file_size | filesize }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">上传时间</span
+            ><span class="info-value"
+              >{{ resource.created_at |
+              utc_to_local(session.get('timezone','+08:00')) }}</span
+            >
+          </div>
+          <div class="info-item">
+            <span class="info-label">下载次数</span
+            ><span class="info-value">{{ resource.downloads }} 次</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">浏览次数</span
+            ><span class="info-value">{{ resource.views }} 次</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2><i class="ri-bar-chart-2-line"></i> 数据统计</h2>
+      </div>
+      <div class="card-body">
+        <div class="info-grid">
+          <div class="stat-compact-item">
+            <i class="ri-download-line icon-blue"></i>
+            <div>
+              <span class="stat-compact-label">下载量</span
+              ><span class="stat-compact-value">{{ resource.downloads }}</span>
+            </div>
+          </div>
+          <div class="stat-compact-item">
+            <i class="ri-eye-line icon-green"></i>
+            <div>
+              <span class="stat-compact-label">浏览量</span
+              ><span class="stat-compact-value">{{ resource.views }}</span>
+            </div>
+          </div>
+          <div class="stat-compact-item">
+            <i class="ri-star-line icon-orange"></i>
+            <div>
+              <span class="stat-compact-label">收藏状态</span
+              ><span class="stat-compact-value"
+                >{% if is_favorited %}已收藏{% else %}未收藏{% endif %}</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if versions %}
+    <div class="card">
+      <div class="card-header">
+        <h2><i class="ri-history-line"></i> 版本历史</h2>
+      </div>
+      <div class="card-body" style="padding: 8px 16px">
+        {% for v in versions %}
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.82rem;
+          "
+        >
+          <div>
+            <span style="font-weight: 600">v{{ v.version_number }}</span>
+            <span style="color: var(--text-muted); margin-left: 6px"
+              >{{ v.original_filename }}</span
+            >
+            <span
+              style="
+                color: var(--text-muted);
+                font-size: 0.75rem;
+                margin-left: 6px;
+              "
+              >{{
+              (v.created_at|utc_to_local(session.get('timezone','+08:00')))[:16]
+              }}</span
+            >
+          </div>
+          <a
+            href="{{ url_for('version_download', version_id=v.id) }}"
+            class="action-btn"
+            title="下载此版本"
+            ><i class="ri-download-line"></i
+          ></a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card" id="relatedCard">
+      <div class="card-header">
+        <h2><i class="ri-links-line"></i> 相关资源</h2>
+      </div>
+      <div class="card-body">
+        <div class="related-list" id="relatedList" style="display: none"></div>
+        <div
+          id="relatedLoading"
+          style="
+            text-align: center;
+            padding: 16px;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+          "
+        >
+          <i class="ri-loader-4-line spinning"></i> AI 正在推荐相关资源...
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% if can_edit or session.get('role') == 'admin' %}
+<div class="mgmt-hint" id="mgmtBtn" onclick="toggleMgmt()" title="管理资源">
+  <i class="ri-tools-line"></i> <span class="mgmt-label">管理</span>
+</div>
+
+<div
+  class="shortcuts-overlay"
+  id="mgmtOverlay"
+  onclick="if (event.target === this) closeMgmt();"
+>
+  <div class="shortcuts-panel" style="width: 420px">
+    <div class="shortcuts-header">
+      <span><i class="ri-tools-line"></i> 管理资源</span
+      ><button class="shortcuts-close" onclick="closeMgmt()">✕</button>
+    </div>
+    <div
+      class="shortcuts-body"
+      style="display: flex; flex-direction: column; gap: 16px"
+    >
+      {% if can_edit %}
+      <div>
+        <h4
+          style="
+            margin: 0 0 8px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+          "
+        >
+          <i class="ri-price-tag-3-line"></i> 多维分类
+        </h4>
+        <form
+          method="post"
+          action="{{ url_for('resource_move', resource_id=resource.code) }}"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          {% for tax in taxonomies %}
+          <div class="form-group" style="margin-bottom: 8px">
+            <label
+              style="
+                font-size: 0.78rem;
+                font-weight: 600;
+                color: var(--text-secondary);
+                margin-bottom: 4px;
+                display: block;
+              "
+              >{{ tax.name }}</label
+            >
+            <select name="cat_{{ tax.slug }}" class="form-control">
+              <option value="">不选择</option>
+              {% for cat in tax.categories %}
+              <option
+                value="{{ cat.id }}"
+                {%
+                if
+                resource_cats.get(tax.slug)
+                and
+                cat.id
+                in
+                resource_cats[tax.slug].terms|map(attribute="id"
+                )|list
+                %}selected{%
+                endif
+                %}
+              >
+                {{ cat.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endfor %}
+          <button type="submit" class="btn btn-outline btn-block">
+            <i class="ri-refresh-line"></i> 更新分类
+          </button>
+        </form>
+      </div>
+      <hr
+        style="border: none; border-top: 1px solid var(--border); margin: 0"
+      />
+      <div>
+        <h4
+          style="
+            margin: 0 0 8px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+          "
+        >
+          <i class="ri-price-tag-3-line"></i> 标签
+        </h4>
+        <form
+          method="post"
+          action="{{ url_for('resource_tags', resource_code=resource.code) }}"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="form-group" style="margin: 0">
+            <input
+              type="text"
+              name="tags"
+              class="form-control"
+              placeholder="用逗号分隔，如：数学,代数,函数"
+              value="{{ tags|map(attribute='name')|join(',') }}"
+            />
+          </div>
+          <button
+            type="submit"
+            class="btn btn-outline btn-block"
+            style="margin-top: 8px"
+          >
+            <i class="ri-refresh-line"></i> 更新标签
+          </button>
+        </form>
+      </div>
+      <hr
+        style="border: none; border-top: 1px solid var(--border); margin: 0"
+      />
+      <div>
+        <h4 style="margin: 0 0 8px; font-size: 0.85rem; color: var(--danger)">
+          <i class="ri-delete-bin-line"></i> 危险操作
+        </h4>
+        <form
+          method="post"
+          action="{{ url_for('resource_delete', resource_id=resource.code) }}"
+          onsubmit="return confirm('确定要删除这个资源吗？此操作不可恢复。');"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <button type="submit" class="btn btn-danger btn-block">
+            <i class="ri-delete-bin-line"></i> 删除资源
+          </button>
+        </form>
+      </div>
+      {% endif %} {% if session.get('role') == 'admin' and resource.status !=
+      'approved' %}
+      <hr
+        style="border: none; border-top: 1px solid var(--border); margin: 0"
+      />
+      <div>
+        <h4 style="margin: 0 0 8px; font-size: 0.85rem; color: var(--warning)">
+          <i class="ri-check-line"></i> 审核
+        </h4>
+        <div style="display: flex; gap: 8px">
+          <form
+            method="post"
+            action="{{ url_for('resource_approve', resource_code=resource.code) }}"
+            style="flex: 1"
+          >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="btn btn-success btn-block">
+              <i class="ri-check-line"></i> 通过
+            </button>
+          </form>
+          <form
+            method="post"
+            action="{{ url_for('resource_reject', resource_code=resource.code) }}"
+            style="flex: 1"
+          >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="btn btn-danger btn-block">
+              <i class="ri-close-line"></i> 拒绝
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %} {% endblock %} {% block scripts %}
+<script>
+  (function () {
+    var list = document.getElementById("relatedList");
+    var loading = document.getElementById("relatedLoading");
+
+    fetch(
+      '{{ url_for("resource_suggest_related", resource_id=resource.code) }}',
+    )
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (json) {
+        loading.style.display = "none";
+        if (json.success && json.related && json.related.length > 0) {
+          list.innerHTML = "";
+          json.related.forEach(function (item) {
+            var a = document.createElement("a");
+            a.href = '{{ url_for("resource_detail") }}?id=' + item.code;
+            a.className = "related-item";
+            a.innerHTML =
+              '<i class="ri-file-line"></i><span>' + item.title + "</span>";
+            list.appendChild(a);
+          });
+          list.style.display = "";
+        } else {
+          list.innerHTML =
+            '<div style="text-align:center;padding:8px;color:var(--text-muted);font-size:.82rem;">暂无相关推荐</div>';
+          list.style.display = "";
+        }
+      })
+      .catch(function () {
+        loading.style.display = "none";
+        list.innerHTML =
+          '<div style="text-align:center;padding:8px;color:var(--text-muted);font-size:.82rem;">暂无相关推荐</div>';
+        list.style.display = "";
+      });
+  })();
+
+  function copyLink(btn) {
+    var url = window.location.href;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard
+        .writeText(url)
+        .then(function () {
+          showCopied(btn);
+        })
+        .catch(function () {
+          fallbackCopy(url, btn);
+        });
+    } else {
+      fallbackCopy(url, btn);
+    }
+  }
+  function fallbackCopy(url, btn) {
+    var ta = document.createElement("textarea");
+    ta.value = url;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand("copy");
+      showCopied(btn);
+    } catch (e) {}
+    document.body.removeChild(ta);
+  }
+  function showCopied(btn) {
+    var orig = btn.innerHTML;
+    btn.innerHTML = '<i class="ri-check-line"></i> 复制成功';
+    setTimeout(function () {
+      btn.innerHTML = orig;
+    }, 2000);
+  }
+  function setRating(el, val) {
+    document.getElementById("ratingInput").value = val;
+    var stars = el.parentElement.querySelectorAll(".star");
+    for (var i = 0; i < stars.length; i++) {
+      stars[i].style.color =
+        parseInt(stars[i].getAttribute("data-value")) <= val
+          ? "var(--warning)"
+          : "var(--border)";
+    }
+  }
+  function toggleMgmt() {
+    document.getElementById("mgmtOverlay").classList.toggle("active");
+  }
+  function closeMgmt() {
+    document.getElementById("mgmtOverlay").classList.remove("active");
+  }
+</script>
+{% endblock %}

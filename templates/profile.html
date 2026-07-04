@@ -1,0 +1,441 @@
+{% extends "base.html" %} {% block title %}个人设置 - 学习资源管理系统{%
+endblock %} {% block content %}
+<div class="page-header">
+  <div>
+    <h1><i class="ri-user-settings-line"></i> 个人设置</h1>
+    <p class="page-subtitle">管理你的个人信息和学习阶段</p>
+  </div>
+</div>
+
+<div class="grid-2-wide">
+  <div class="card">
+    <div class="card-header">
+      <h2><i class="ri-user-line"></i> 基本信息</h2>
+    </div>
+    <div class="card-body">
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <div>
+          <label style="font-size: 0.78rem; color: var(--text-secondary)"
+            >用户名</label
+          >
+          <div style="font-size: 1rem; font-weight: 600; padding: 8px 0">
+            {{ user.username }}
+          </div>
+        </div>
+        <div>
+          <label style="font-size: 0.78rem; color: var(--text-secondary)"
+            >注册时间</label
+          >
+          <div style="font-size: 0.9rem; padding: 8px 0">
+            {{ user.created_at | utc_to_local(session.get('timezone','+08:00'))
+            }}
+          </div>
+        </div>
+      </div>
+
+      {% if resources %}
+      <div class="card" style="margin-top: 20px">
+        <div class="card-header">
+          <h2>
+            <i class="ri-upload-cloud-2-line"></i> 我上传的文件（共 {{ total }}
+            个）
+          </h2>
+        </div>
+        <div class="card-body" style="padding: 0">
+          <div class="table-wrapper">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th style="width: 40%">标题</th>
+                  <th>类型</th>
+                  <th>大小</th>
+                  <th>状态</th>
+                  <th>上传时间</th>
+                  <th style="width: 80px">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in resources %}
+                <tr>
+                  <td>
+                    <a
+                      href="{{ url_for('resource_detail', id=r.code) }}"
+                      style="font-weight: 600"
+                      >{{ r.title }}</a
+                    >
+                  </td>
+                  <td>
+                    <span
+                      class="badge-{{ r.file_type }}"
+                      style="
+                        padding: 1px 8px;
+                        border-radius: 999px;
+                        font-size: 0.72rem;
+                      "
+                      >{{ r.file_type | upper }}</span
+                    >
+                  </td>
+                  <td class="text-muted">{{ r.file_size | filesize }}</td>
+                  <td>
+                    {% if r.status == 'approved' %}<span
+                      class="badge-archive"
+                      style="
+                        padding: 1px 8px;
+                        border-radius: 999px;
+                        font-size: 0.72rem;
+                      "
+                      >已通过</span
+                    >
+                    {% elif r.status == 'pending' %}<span
+                      class="badge-warning"
+                      style="
+                        padding: 1px 8px;
+                        border-radius: 999px;
+                        font-size: 0.72rem;
+                      "
+                      >待审核</span
+                    >
+                    {% elif r.status == 'rejected' %}<span
+                      class="badge-danger"
+                      style="
+                        padding: 1px 8px;
+                        border-radius: 999px;
+                        font-size: 0.72rem;
+                      "
+                      >已拒绝</span
+                    >{% endif %}
+                  </td>
+                  <td class="text-muted">
+                    {{ (r.created_at |
+                    utc_to_local(session.get('timezone','+08:00')))[:16] }}
+                  </td>
+                  <td>
+                    <a
+                      href="{{ url_for('resource_detail', id=r.code) }}"
+                      class="action-btn"
+                      title="查看"
+                      ><i class="ri-eye-line"></i
+                    ></a>
+                    {% if can_edit(r) %}<a
+                      href="{{ url_for('resource_edit', resource_id=r.code) }}"
+                      class="action-btn"
+                      title="编辑"
+                      ><i class="ri-edit-line"></i></a
+                    >{% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% if total_pages > 1 %}
+          <div class="pagination" style="padding: 12px 16px; margin: 0">
+            {% for p in range(1, total_pages + 1) %}
+            <a
+              href="{{ url_for('profile', page=p) }}"
+              class="page-btn {% if p == page %}active{% endif %}"
+              >{{ p }}</a
+            >
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+      <div class="empty-state" style="margin-top: 20px">
+        <i
+          class="ri-inbox-line"
+          style="font-size: 2.5rem; color: var(--text-muted)"
+        ></i>
+        <p style="color: var(--text-muted)">还没有上传任何文件</p>
+        <a
+          href="{{ url_for('resource_upload') }}"
+          class="btn btn-primary"
+          style="margin-top: 8px"
+          ><i class="ri-upload-cloud-2-line"></i> 上传文件</a
+        >
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2><i class="ri-graduation-cap-line"></i> 学习阶段</h2>
+    </div>
+    <div class="card-body">
+      <form method="post" action="{{ url_for('profile') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <div class="form-group">
+          <label>当前学习阶段</label>
+          <div class="stage-selector">
+            <select
+              id="stageGroup"
+              class="form-control"
+              onchange="updateStageDetail()"
+            >
+              {% set parts = user.learning_stage.split('/') %}
+              {% set group = parts[0] if parts|length > 1 else '高中' %}
+              <option value="小学" {% if group == '小学' %}selected{% endif %}>小学</option>
+              <option value="初中" {% if group == '初中' %}selected{% endif %}>初中</option>
+              <option value="高中" {% if group == '高中' %}selected{% endif %}>高中</option>
+              <option value="大学" {% if group == '大学' %}selected{% endif %}>大学</option>
+              <option value="硕博" {% if group == '硕博' %}selected{% endif %}>硕博</option>
+            </select>
+            <select
+              id="stageDetail"
+              class="form-control"
+              name="learning_stage"
+            ></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>时区</label>
+          <select class="form-control" name="timezone">
+            {% set tz = user.timezone or '+08:00' %}
+            <option value="-12:00" {% if tz="" ="-12:00" %}selected{% endif %}>
+              UTC-12:00
+            </option>
+            <option value="-11:00" {% if tz="" ="-11:00" %}selected{% endif %}>
+              UTC-11:00
+            </option>
+            <option value="-10:00" {% if tz="" ="-10:00" %}selected{% endif %}>
+              UTC-10:00
+            </option>
+            <option value="-09:00" {% if tz="" ="-09:00" %}selected{% endif %}>
+              UTC-09:00
+            </option>
+            <option value="-08:00" {% if tz="" ="-08:00" %}selected{% endif %}>
+              UTC-08:00
+            </option>
+            <option value="-07:00" {% if tz="" ="-07:00" %}selected{% endif %}>
+              UTC-07:00
+            </option>
+            <option value="-06:00" {% if tz="" ="-06:00" %}selected{% endif %}>
+              UTC-06:00
+            </option>
+            <option value="-05:00" {% if tz="" ="-05:00" %}selected{% endif %}>
+              UTC-05:00
+            </option>
+            <option value="-04:00" {% if tz="" ="-04:00" %}selected{% endif %}>
+              UTC-04:00
+            </option>
+            <option value="-03:00" {% if tz="" ="-03:00" %}selected{% endif %}>
+              UTC-03:00
+            </option>
+            <option value="-02:00" {% if tz="" ="-02:00" %}selected{% endif %}>
+              UTC-02:00
+            </option>
+            <option value="-01:00" {% if tz="" ="-01:00" %}selected{% endif %}>
+              UTC-01:00
+            </option>
+            <option value="+00:00" {% if tz="" ="+00:00" %}selected{% endif %}>
+              UTC+00:00
+            </option>
+            <option value="+01:00" {% if tz="" ="+01:00" %}selected{% endif %}>
+              UTC+01:00
+            </option>
+            <option value="+02:00" {% if tz="" ="+02:00" %}selected{% endif %}>
+              UTC+02:00
+            </option>
+            <option value="+03:00" {% if tz="" ="+03:00" %}selected{% endif %}>
+              UTC+03:00
+            </option>
+            <option value="+04:00" {% if tz="" ="+04:00" %}selected{% endif %}>
+              UTC+04:00
+            </option>
+            <option value="+05:00" {% if tz="" ="+05:00" %}selected{% endif %}>
+              UTC+05:00
+            </option>
+            <option value="+05:30" {% if tz="" ="+05:30" %}selected{% endif %}>
+              UTC+05:30
+            </option>
+            <option value="+06:00" {% if tz="" ="+06:00" %}selected{% endif %}>
+              UTC+06:00
+            </option>
+            <option value="+07:00" {% if tz="" ="+07:00" %}selected{% endif %}>
+              UTC+07:00
+            </option>
+            <option value="+08:00" {% if tz="" ="+08:00" %}selected{% endif %}>
+              UTC+08:00
+            </option>
+            <option value="+09:00" {% if tz="" ="+09:00" %}selected{% endif %}>
+              UTC+09:00
+            </option>
+            <option value="+10:00" {% if tz="" ="+10:00" %}selected{% endif %}>
+              UTC+10:00
+            </option>
+            <option value="+11:00" {% if tz="" ="+11:00" %}selected{% endif %}>
+              UTC+11:00
+            </option>
+            <option value="+12:00" {% if tz="" ="+12:00" %}selected{% endif %}>
+              UTC+12:00
+            </option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">
+          <i class="ri-save-line"></i> 保存修改
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 16px">
+    <div class="card-header">
+      <h2><i class="ri-lock-line"></i> 修改密码</h2>
+    </div>
+    <div class="card-body">
+      <form method="post" action="{{ url_for('profile') }}" id="passwordForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="action" value="password" />
+        <div class="form-group">
+          <label for="old_password">原密码</label>
+          <input
+            type="password"
+            id="old_password"
+            name="old_password"
+            class="form-control"
+            placeholder="输入原密码"
+            required
+            minlength="6"
+          />
+        </div>
+        <div class="form-group">
+          <label for="new_password">新密码</label>
+          <input
+            type="password"
+            id="new_password"
+            name="new_password"
+            class="form-control"
+            placeholder="输入新密码"
+            required
+            minlength="6"
+            maxlength="64"
+          />
+          <small class="form-hint" id="npHint">至少 6 个字符</small>
+        </div>
+        <div class="form-group">
+          <label for="confirm_password">确认新密码</label>
+          <input
+            type="password"
+            id="confirm_password"
+            name="confirm_password"
+            class="form-control"
+            placeholder="再次输入新密码"
+            required
+          />
+          <small class="form-hint" id="cpHint">请再次输入新密码</small>
+        </div>
+        <button type="submit" class="btn btn-primary" id="pwBtn">
+          <i class="ri-lock-line"></i> 修改密码
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function updateStageDetail() {
+    const group = document.getElementById("stageGroup").value;
+    const detail = document.getElementById("stageDetail");
+    const current = "{{ user.learning_stage }}";
+    const stages = {
+      小学: ["一年级", "二年级", "三年级", "四年级", "五年级", "六年级"],
+      初中: ["初一", "初二", "初三"],
+      高中: ["高一", "高二", "高三"],
+      大学: ["大一", "大二", "大三", "大四"],
+      硕博: ["硕博"],
+    };
+    const items = stages[group] || [];
+    detail.innerHTML = items
+      .map((s) => {
+        const val = group + "/" + s;
+        const sel = val === current ? " selected" : "";
+        return '<option value="' + val + '"' + sel + ">" + s + "</option>";
+      })
+      .join("");
+  }
+  updateStageDetail();
+
+  (function () {
+    var np = document.getElementById("new_password");
+    var cp = document.getElementById("confirm_password");
+    var npHint = document.getElementById("npHint");
+    var cpHint = document.getElementById("cpHint");
+
+    function validateNewPw() {
+      if (np.value.length > 0 && np.value.length < 6) {
+        np.className = "form-control error";
+        npHint.className = "form-hint error";
+        npHint.textContent = "至少 6 个字符";
+      } else {
+        np.className = "form-control";
+        npHint.className = "form-hint";
+        npHint.textContent = "";
+      }
+      if (cp.value) validateConfirm();
+    }
+
+    function validateConfirm() {
+      if (!cp.value) {
+        cp.className = "form-control";
+        cpHint.className = "form-hint";
+        cpHint.textContent = "";
+        return;
+      }
+      if (cp.value !== np.value) {
+        cp.className = "form-control error";
+        cpHint.className = "form-hint error";
+        cpHint.textContent = "两次密码不一致";
+      } else {
+        cp.className = "form-control valid";
+        cpHint.className = "form-hint";
+        cpHint.textContent = "";
+      }
+    }
+
+    np.addEventListener("input", validateNewPw);
+    cp.addEventListener("input", validateConfirm);
+
+    document
+      .getElementById("passwordForm")
+      .addEventListener("submit", function (e) {
+        var errs = this.querySelectorAll(".form-control.error");
+        if (errs.length > 0) {
+          e.preventDefault();
+          return;
+        }
+        var btn = document.getElementById("pwBtn");
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ri-loader-4-line spinning"></i> 修改中...';
+      });
+  })();
+</script>
+
+<style>
+  .stage-selector {
+    display: flex;
+    gap: 8px;
+  }
+  .stage-selector select {
+    flex: 1;
+  }
+  .form-hint {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  .form-hint.error {
+    color: var(--danger);
+  }
+  .form-control.error {
+    border-color: var(--danger);
+    background: #fef2f2;
+  }
+  .form-control.valid {
+    border-color: var(--success);
+    background: #f0fdf4;
+  }
+</style>
+{% endblock %}

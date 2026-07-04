@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}用户管理 - 学习资源管理系统{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1><i class="ri-user-settings-line"></i>用户管理</h1>
+        <p class="page-subtitle">共 {{ total }} 个注册用户</p>
+    </div>
+</div>
+
+<div style="margin-bottom:12px;">
+    <form method="get" action="{{ url_for('admin_users') }}" style="display:flex;gap:8px;max-width:400px;">
+        <input type="text" name="q" class="form-control" placeholder="搜索用户名..." value="{{ q }}" style="flex:1;">
+        <button type="submit" class="btn btn-primary"><i class="ri-search-line"></i> 搜索</button>
+        {% if q %}<a href="{{ url_for('admin_users') }}" class="btn btn-outline">清除</a>{% endif %}
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if users %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>用户名</th>
+                        <th>角色</th>
+                        <th>学习阶段</th>
+                        <th>时区</th>
+                        <th>资源数</th>
+                        <th>收藏数</th>
+                        <th>注册时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td>{{ u.id }}</td>
+                        <td><strong>{{ u.username }}</strong></td>
+                        <td><span class="badge-{{ 'archive' if u.role == 'admin' else 'code' if u.role == 'editor' else 'text' }}" style="padding:1px 8px;font-size:.72rem;border-radius:999px;">{{ u.role }}</span></td>
+                        <td>{{ u.learning_stage }}</td>
+                        <td>{{ u.timezone }}</td>
+                        <td>{{ u.resource_count }}</td>
+                        <td>{{ u.favorite_count }}</td>
+                        <td>{{ (u.created_at | utc_to_local(session.get('timezone','+08:00')))[:10] }}</td>
+                        <td>
+                            {% if u.id != session.user_id %}
+                            <button class="btn btn-outline" style="font-size:.75rem;padding:2px 10px;" onclick="editUser({{ u.id }},'{{ u.username }}','{{ u.role }}','{{ u.learning_stage }}','{{ u.timezone }}')"><i class="ri-edit-line"></i></button>
+                            <form method="post" action="{{ url_for('admin_user_delete', user_id=u.id) }}" style="display:inline;" onsubmit="return confirm('确定删除用户 {{ u.username }}？其所有资源和收藏也将被删除。');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-outline danger" style="font-size:.75rem;padding:2px 10px;"><i class="ri-delete-bin-line"></i></button>
+                            </form>
+                            {% else %}
+                            <span style="color:var(--text-muted);font-size:.78rem;">当前用户</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if total_pages > 1 %}
+        <div class="pagination" style="margin-top:16px;">
+            {% if page > 1 %}
+            <a href="{{ url_for('admin_users', q=q, page=page-1) }}" class="page-btn"><i class="ri-arrow-left-s-line"></i> 上一页</a>
+            {% endif %}
+            <div class="page-numbers">
+                {% for p in range(1, total_pages + 1) %}
+                    {% if p == page %}
+                    <span class="page-btn active">{{ p }}</span>
+                    {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+                    <a href="{{ url_for('admin_users', q=q, page=p) }}" class="page-btn">{{ p }}</a>
+                    {% elif p == page - 3 or p == page + 3 %}
+                    <span class="page-dots">...</span>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% if page < total_pages %}
+            <a href="{{ url_for('admin_users', q=q, page=page+1) }}" class="page-btn">下一页 <i class="ri-arrow-right-s-line"></i></a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state"><i class="ri-user-line"></i><h3>暂无用户</h3></div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="shortcuts-overlay" id="editUserModal" style="display:none;" onclick="if(event.target===this)closeEditUser()">
+  <div class="shortcuts-panel" style="width:380px;">
+    <div class="shortcuts-header"><span>编辑用户</span><button class="shortcuts-close" onclick="closeEditUser()">✕</button></div>
+    <div class="shortcuts-body">
+      <form method="post" id="editUserForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+          <label>角色</label>
+          <select name="role" class="form-control" id="editRole">
+            <option value="user">user</option>
+            <option value="editor">editor</option>
+            <option value="admin">admin</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>学习阶段</label>
+          <input type="text" name="learning_stage" class="form-control" id="editStage">
+        </div>
+        <div class="form-group">
+          <label>时区</label>
+          <input type="text" name="timezone" class="form-control" id="editTz">
+        </div>
+        <div class="form-group">
+          <label>新密码（留空不修改）</label>
+          <input type="password" name="new_password" class="form-control" placeholder="留空则不修改密码">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block"><i class="ri-save-line"></i> 保存</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function editUser(id, username, role, stage, tz) {
+  document.getElementById('editRole').value = role;
+  document.getElementById('editStage').value = stage;
+  document.getElementById('editTz').value = tz;
+  document.getElementById('editUserForm').action = '{{ url_for("admin_user_edit", user_id=0) }}'.replace('0', '') + id;
+  document.getElementById('editUserModal').style.display = 'flex';
+}
+function closeEditUser() {
+  document.getElementById('editUserModal').style.display = 'none';
+}
+</script>
+{% endblock %}

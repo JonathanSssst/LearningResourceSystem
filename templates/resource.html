@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}资源管理 - 学习资源管理系统{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div class="hero-content">
+        <h1>学习资源库</h1>
+        <p>管理、分类、分享你的学习资源。支持多维度分类：文件类型、学科、难度等级。</p>
+        <div class="hero-actions">
+            <a href="{{ url_for('resource_upload') }}" class="btn btn-lg" style="background:#fff;color:var(--primary);font-weight:700;">
+                <i class="ri-upload-cloud-2-line"></i> 上传资源
+            </a>
+            <a href="{{ url_for('resource_all') }}" class="btn btn-lg" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);">
+                <i class="ri-folder-line"></i> 浏览全部
+            </a>
+        </div>
+    </div>
+</div>
+
+{% for tax in taxonomies %}
+<div class="section">
+    <div class="section-header">
+        <h2 class="section-title"><i class="ri-price-tag-3-line"></i> {{ tax.name }}</h2>
+        <a href="{{ url_for('categories') }}" class="btn-link">管理 <i class="ri-arrow-right-line"></i></a>
+    </div>
+    <div class="cat-grid">
+        {% for cat in tax.categories %}
+        <a href="{{ url_for('resource_all', **{'cat_' + tax.slug: cat.id}) }}" class="cat-card">
+            <div class="cat-card-icon"><i class="ri-price-tag-3-line"></i></div>
+            <h3>{{ cat.name }}</h3>
+            <p>{{ cat.description or '暂无描述' }}</p>
+            <div class="cat-card-footer">
+                <span><i class="ri-file-line"></i> 查看资源</span>
+                <i class="ri-arrow-right-line"></i>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+
+<div class="grid-3">
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="ri-time-line"></i> 最新上传</h2>
+            <a href="{{ url_for('resource_latests') }}" class="btn-link"><i class="ri-arrow-right-line"></i></a>
+        </div>
+        <div class="card-body">
+            <p style="color:var(--text-secondary);font-size:.85rem;margin-bottom:12px;">查看最近上传的学习资源</p>
+            <a href="{{ url_for('resource_latests') }}" class="btn btn-outline btn-block"><i class="ri-time-line"></i> 查看最新资源</a>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="ri-bar-chart-box-line"></i> 资源排行</h2>
+            <a href="{{ url_for('resource_ranks') }}" class="btn-link"><i class="ri-arrow-right-line"></i></a>
+        </div>
+        <div class="card-body">
+            <p style="color:var(--text-secondary);font-size:.85rem;margin-bottom:12px;">查看下载量、浏览量排行榜</p>
+            <a href="{{ url_for('resource_ranks') }}" class="btn btn-outline btn-block"><i class="ri-bar-chart-box-line"></i> 查看排行榜</a>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="ri-star-line"></i> 我的收藏</h2>
+            <a href="{{ url_for('favorites') }}" class="btn-link"><i class="ri-arrow-right-line"></i></a>
+        </div>
+        <div class="card-body">
+            <p style="color:var(--text-secondary);font-size:.85rem;margin-bottom:12px;">管理你收藏的学习资源</p>
+            <a href="{{ url_for('favorites') }}" class="btn btn-outline btn-block"><i class="ri-star-line"></i> 查看收藏夹</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

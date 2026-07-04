@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}分类管理 - 学习资源管理系统{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('home') }}">首页</a>
+    <i class="ri-arrow-right-s-line"></i>
+    <span class="current">分类管理</span>
+</div>
+<div class="page-header">
+    <div>
+        <h1><i class="ri-price-tag-3-line"></i>分类管理</h1>
+        <p class="page-subtitle">多维度分类体系，支持按文件类型、学科、难度等维度管理资源</p>
+    </div>
+</div>
+
+<div class="grid-2-wide">
+    <div style="display:flex;flex-direction:column;gap:20px;">
+        {% for tax in taxonomies %}
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="ri-price-tag-3-line"></i> {{ tax.name }}</h2>
+                <span class="count-badge">{{ tax.categories|length }} 项</span>
+            </div>
+            <div class="card-body">
+                {% if tax.categories %}
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>名称</th>
+                                <th>描述</th>
+                                <th>资源数</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cat in tax.categories %}
+                            <tr>
+                                <td>
+                                    <div class="cat-name-cell">
+                                        <i class="ri-price-tag-3-line"></i>
+                                        <span>{{ cat.name }}</span>
+                                    </div>
+                                </td>
+                                <td>{{ cat.description or '-' }}</td>
+                                <td><span class="count-badge">{{ cat.resource_count }}</span></td>
+                                <td>
+                                    <div style="display:flex;gap:4px;align-items:center;">
+                                        <a href="{{ url_for('resource_all', **{'cat_' + tax.slug: cat.id}) }}" class="action-btn" title="查看资源"><i class="ri-eye-line"></i></a>
+                                        <button type="button" class="action-btn" title="编辑" onclick="editCategory('{{ cat.id }}', '{{ cat.name }}', '{{ cat.description or '' }}', this)"><i class="ri-edit-line"></i></button>
+                                        <form method="post" action="{{ url_for('category_delete', category_id=cat.id) }}" onsubmit="return confirm('确定要删除此分类吗？');" style="display:inline;">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="action-btn danger" title="删除"><i class="ri-delete-bin-line"></i></button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state" style="padding:30px 20px;">
+                    <i class="ri-price-tag-3-line"></i>
+                    <h3>暂未添加分类</h3>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div>
+        <div class="card" id="editCategoryCard" style="display:none;">
+            <div class="card-header"><h2><i class="ri-edit-line"></i> 编辑分类</h2></div>
+            <div class="card-body">
+                <form method="post" action="" id="editCategoryForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="form-group">
+                        <label for="edit_name">分类名称</label>
+                        <input type="text" id="edit_name" name="name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_desc">描述</label>
+                        <input type="text" id="edit_desc" name="description" class="form-control" placeholder="输入分类描述">
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button type="submit" class="btn btn-primary"><i class="ri-save-line"></i> 保存</button>
+                        <button type="button" class="btn btn-outline" onclick="cancelEditCategory()">取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h2><i class="ri-add-line"></i> 添加分类</h2></div>
+            <div class="card-body">
+                <form method="post" action="{{ url_for('category_add') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="form-group">
+                        <label for="taxonomy_id">所属维度</label>
+                        <select id="taxonomy_id" name="taxonomy_id" class="form-control">
+                            {% for tax in taxonomies %}
+                            <option value="{{ tax.id }}">{{ tax.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="name">分类名称</label>
+                        <input type="text" id="name" name="name" class="form-control" placeholder="输入分类名称" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="desc">描述（可选）</label>
+                        <input type="text" id="desc" name="description" class="form-control" placeholder="输入分类描述">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block"><i class="ri-add-line"></i> 添加分类</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top:16px;">
+            <div class="card-header"><h2><i class="ri-information-line"></i> 关于多维分类</h2></div>
+            <div class="card-body">
+                <div style="display:flex;flex-direction:column;gap:12px;font-size:.82rem;color:var(--text-secondary);">
+                    <p><strong style="color:var(--text);">文件类型</strong> — 按资源的格式和类型划分，如文档、视频、代码等。</p>
+                    <p><strong style="color:var(--text);">学科分类</strong> — 按学科领域划分，如数学、物理、计算机科学等。</p>
+                    <p><strong style="color:var(--text);">难度等级</strong> — 按学习难度划分，从入门到专家。</p>
+                    <p style="margin-top:8px;font-size:.78rem;">每个资源可以同时拥有多个维度的分类，方便从不同角度检索和管理。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function editCategory(id, name, desc, btn) {
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_desc').value = desc;
+    document.getElementById('editCategoryForm').action = '{{ url_for("category_edit", category_id=0) }}'.replace('0', id);
+    document.getElementById('editCategoryCard').style.display = '';
+    document.getElementById('editCategoryCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function cancelEditCategory() {
+    document.getElementById('editCategoryCard').style.display = 'none';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}注册 - 学习资源管理系统{% endblock %}
+
+{% block auth_content %}
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <img src="{{ url_for('static', filename='favicon.svg') }}" alt="LRS" style="width:28px;height:28px">
+        </div>
+        <div class="auth-header">
+            <h1>创建账号</h1>
+            <p>加入学习资源管理系统</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <i class="ri-information-line"></i> {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="post" action="{{ url_for('register') }}" id="registerForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label for="username"><i class="ri-user-line"></i> 用户名</label>
+                <input type="text" id="username" name="username" class="form-control" placeholder="请输入用户名" required minlength="2" maxlength="20" pattern="[a-zA-Z0-9_\u4e00-\u9fa5]+">
+                <small class="form-hint" id="usernameHint">2-20 位字母、数字、下划线或中文</small>
+            </div>
+
+            <div class="form-group">
+                <label for="password"><i class="ri-lock-line"></i> 密码</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="请输入密码" required minlength="6" maxlength="64">
+                <small class="form-hint" id="passwordHint">至少 6 个字符</small>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm"><i class="ri-lock-line"></i> 确认密码</label>
+                <input type="password" id="confirm" name="confirm" class="form-control" placeholder="再次输入密码" required>
+                <small class="form-hint" id="confirmHint">请再次输入密码</small>
+            </div>
+
+            <div class="form-group">
+                <label><i class="ri-graduation-cap-line"></i> 学习阶段</label>
+                <div class="stage-selector">
+                    <select id="stageGroup" class="form-control" onchange="updateStageDetail()">
+                        <option value="小学">小学</option>
+                        <option value="初中">初中</option>
+                        <option value="高中" selected>高中</option>
+                        <option value="大学">大学</option>
+                        <option value="硕博">硕博</option>
+                    </select>
+                    <select id="stageDetail" class="form-control" name="learning_stage">
+                        <option value="高中/高一" selected>高一</option>
+                        <option value="高中/高二">高二</option>
+                        <option value="高中/高三">高三</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg" id="registerBtn">
+                <i class="ri-user-add-line"></i> 注册
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>已有账号？<a href="{{ url_for('login') }}">立即登录</a></p>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-hint { display:block;font-size:.75rem;color:var(--text-muted);margin-top:4px; }
+.form-hint.error { color:var(--danger); }
+.form-control.error { border-color:var(--danger);background:#fef2f2; }
+.form-control.valid { border-color:var(--success);background:#f0fdf4; }
+</style>
+
+<script>
+(function() {
+    function validateField(input, hint, check) {
+        var val = input.value;
+        var result = check(val);
+        if (result === true) {
+            input.className = 'form-control valid';
+            hint.className = 'form-hint';
+            hint.textContent = '';
+        } else {
+            input.className = 'form-control error';
+            hint.className = 'form-hint error';
+            hint.textContent = result;
+        }
+    }
+
+    var username = document.getElementById('username');
+    var password = document.getElementById('password');
+    var confirm = document.getElementById('confirm');
+    var uHint = document.getElementById('usernameHint');
+    var pHint = document.getElementById('passwordHint');
+    var cHint = document.getElementById('confirmHint');
+
+    username.addEventListener('input', function() {
+        validateField(username, uHint, function(v) {
+            if (v.length < 2) return '至少 2 个字符';
+            if (v.length > 20) return '最多 20 个字符';
+            if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(v)) return '仅支持字母、数字、下划线和中文';
+            return true;
+        });
+    });
+
+    password.addEventListener('input', function() {
+        validateField(password, pHint, function(v) {
+            if (v.length > 0 && v.length < 6) return '至少 6 个字符';
+            return true;
+        });
+        if (confirm.value) confirm.dispatchEvent(new Event('input'));
+    });
+
+    confirm.addEventListener('input', function() {
+        validateField(confirm, cHint, function(v) {
+            if (!v) return '请再次输入密码';
+            if (v !== password.value) return '两次密码不一致';
+            return true;
+        });
+    });
+
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+        var errors = this.querySelectorAll('.form-control.error');
+        if (errors.length > 0) { e.preventDefault(); return; }
+        var btn = document.getElementById('registerBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ri-loader-4-line spinning"></i> 注册中...';
+    });
+})();
+</script>
+
+<script>
+function updateStageDetail() {
+    const group = document.getElementById('stageGroup').value;
+    const detail = document.getElementById('stageDetail');
+    const stages = {
+        '小学': ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级'],
+        '初中': ['初一', '初二', '初三'],
+        '高中': ['高一', '高二', '高三'],
+        '大学': ['大一', '大二', '大三', '大四'],
+        '硕博': ['硕博']
+    };
+    const items = stages[group] || [];
+    detail.innerHTML = items.map(s => {
+        const val = group + '/' + s;
+        const sel = (group === '高中' && s === '高一') ? ' selected' : '';
+        return '<option value="' + val + '"' + sel + '>' + s + '</option>';
+    }).join('');
+}
+</script>
+
+<style>
+.stage-selector { display: flex; gap: 8px; }
+.stage-selector select { flex: 1; }
+</style>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}首页 - 学习资源管理系统{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<div class="hero">
+    <div class="hero-content">
+        <h1>欢迎回来，{{ session.get('username', '用户') }}</h1>
+        <p>管理、分类、分享你的学习资源。已有 {{ total_resources }} 个资源，{{ total_categories }} 个分类。</p>
+        <div class="hero-actions">
+            <a href="{{ url_for('resource_upload') }}" class="btn btn-lg" style="background:#fff;color:var(--primary);font-weight:700;">
+                <i class="ri-upload-cloud-2-line"></i> 上传资源
+            </a>
+            <a href="{{ url_for('resource_all') }}" class="btn btn-lg" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);">
+                <i class="ri-folder-line"></i> 浏览资源
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon icon-blue"><i class="ri-folder-3-line"></i></div>
+        <div class="stat-content">
+            <h3>{{ total_resources }}</h3>
+            <p>资源总数</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon icon-green"><i class="ri-price-tag-3-line"></i></div>
+        <div class="stat-content">
+            <h3>{{ total_categories }}</h3>
+            <p>分类数量</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon icon-orange"><i class="ri-download-line"></i></div>
+        <div class="stat-content">
+            <h3>{{ total_downloads }}</h3>
+            <p>总下载量</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon icon-purple"><i class="ri-star-line"></i></div>
+        <div class="stat-content">
+            <h3>{{ total_favorites }}</h3>
+            <p>我的收藏</p>
+        </div>
+    </div>
+</div>
+
+<!-- Recent & Categories -->
+<div class="grid-2 mb-24">
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="ri-time-line"></i> 最近上传</h2>
+            <a href="{{ url_for('resource_latests') }}" class="btn-link">查看全部 <i class="ri-arrow-right-line"></i></a>
+        </div>
+        <div class="card-body">
+            {% if recent_resources %}
+            <div class="resource-list">
+                {% for r in recent_resources %}
+                <div class="resource-list-item">
+                    <div class="list-icon badge-{{ r.file_type }}">
+                        {% if r.file_type == 'image' %}<i class="ri-image-line"></i>
+                        {% elif r.file_type == 'video' %}<i class="ri-video-line"></i>
+                        {% elif r.file_type == 'pdf' %}<i class="ri-file-pdf-line"></i>
+                        {% elif r.file_type == 'doc' %}<i class="ri-file-word-line"></i>
+                        {% elif r.file_type == 'code' %}<i class="ri-code-s-slash-line"></i>
+                        {% elif r.file_type == 'archive' %}<i class="ri-file-zip-line"></i>
+                        {% elif r.file_type == 'audio' %}<i class="ri-music-line"></i>
+                        {% else %}<i class="ri-file-line"></i>{% endif %}
+                    </div>
+                    <div class="list-info">
+                        <div class="list-title"><a href="{{ url_for('resource_detail', id=r.code) }}">{{ r.title }}</a></div>
+                        <div class="list-meta">
+                            <span><i class="ri-folder-line"></i> {{ r.category_name or '未分类' }}</span>
+                            <span><i class="ri-download-line"></i> {{ r.downloads }}</span>
+                            <span><i class="ri-eye-line"></i> {{ r.views }}</span>
+                        </div>
+                    </div>
+                    <span class="list-date">{{ (r.created_at | utc_to_local(session.get('timezone','+08:00')))[:10] }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="ri-folder-open-line"></i>
+                <h3>暂无资源</h3>
+                <p>快去上传你的第一个学习资源吧！</p>
+                <a href="{{ url_for('resource_upload') }}" class="btn btn-primary"><i class="ri-upload-cloud-2-line"></i> 上传资源</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="ri-price-tag-3-line"></i> 学科分类</h2>
+            <a href="{{ url_for('categories') }}" class="btn-link">管理 <i class="ri-settings-3-line"></i></a>
+        </div>
+        <div class="card-body">
+            <div class="resource-list">
+                {% for cat in subject_cats %}
+                <a href="{{ url_for('resource_all', **{'cat_subject': cat.id}) }}" class="resource-list-item" style="text-decoration:none;color:var(--text);">
+                    <div class="list-icon icon-blue"><i class="ri-folder-line"></i></div>
+                    <div class="list-info">
+                        <div class="list-title">{{ cat.name }}</div>
+                        <div class="list-meta">{{ cat.resource_count }} 个资源</div>
+                    </div>
+                    <i class="ri-arrow-right-s-line" style="color:var(--text-muted);font-size:1.2rem;"></i>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="section">
+    <div class="section-header">
+        <h2 class="section-title"><i class="ri-flashlight-line"></i> 快捷操作</h2>
+    </div>
+    <div class="quick-grid">
+        <a href="{{ url_for('resource_upload') }}" class="quick-item">
+            <i class="ri-upload-cloud-2-line" style="color:var(--primary);"></i>
+            <span>上传资源</span>
+        </a>
+        <a href="{{ url_for('resource_all') }}" class="quick-item">
+            <i class="ri-folder-line" style="color:var(--success);"></i>
+            <span>浏览资源</span>
+        </a>
+        <a href="{{ url_for('dashboard') }}" class="quick-item">
+            <i class="ri-bar-chart-line" style="color:var(--warning);"></i>
+            <span>数据分析</span>
+        </a>
+        <a href="{{ url_for('favorites') }}" class="quick-item">
+            <i class="ri-star-line" style="color:var(--danger);"></i>
+            <span>我的收藏</span>
+        </a>
+    </div>
+</div>
+{% endblock %}

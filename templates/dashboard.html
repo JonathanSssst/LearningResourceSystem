@@ -1,0 +1,700 @@
+{% extends "base.html" %} {% block title %}数据分析 - 学习资源管理系统{%
+endblock %} {% block content %}
+<div class="page-header">
+  <div>
+    <h1><i class="ri-bar-chart-line"></i>数据分析</h1>
+    <p class="page-subtitle">查看学习资源的各项统计数据与趋势</p>
+  </div>
+</div>
+
+<div class="stats-grid stats-grid-6">
+  <div class="stat-card">
+    <div class="stat-icon icon-blue"><i class="ri-folder-3-line"></i></div>
+    <div class="stat-content">
+      <h3>{{ stats.total_resources }}</h3>
+      <p>资源总数</p>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon icon-green"><i class="ri-price-tag-3-line"></i></div>
+    <div class="stat-content">
+      <h3>{{ stats.total_categories }}</h3>
+      <p>分类数量</p>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon icon-orange"><i class="ri-download-line"></i></div>
+    <div class="stat-content">
+      <h3>{{ stats.total_downloads }}</h3>
+      <p>总下载量</p>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon icon-purple"><i class="ri-eye-line"></i></div>
+    <div class="stat-content">
+      <h3>{{ stats.total_views }}</h3>
+      <p>总浏览量</p>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon icon-pink"><i class="ri-user-line"></i></div>
+    <div class="stat-content">
+      <h3>{{ stats.total_users }}</h3>
+      <p>用户数量</p>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon icon-cyan"><i class="ri-star-line"></i></div>
+    <div class="stat-content">
+      <h3>{{ stats.total_favorites }}</h3>
+      <p>收藏总数</p>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-24">
+  <div class="card-header">
+    <h2><i class="ri-pie-chart-2-line"></i> 分类分布统计</h2>
+  </div>
+  <div class="card-body">
+    <div style="display: flex; flex-wrap: wrap; gap: 20px">
+      {% for taxonomy_name, cats in taxonomy_pies.items() %}
+      <div
+        class="pie-group"
+        style="flex: 1; min-width: 160px; max-width: 260px"
+      >
+        <div
+          style="
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 6px;
+            color: var(--text);
+          "
+        >
+          {{ taxonomy_name }}
+        </div>
+        <div style="display: flex; align-items: flex-start; gap: 10px">
+          <canvas
+            class="taxonomyPieCanvas"
+            width="120"
+            height="120"
+            data-taxonomy="{{ taxonomy_name }}"
+            style="flex-shrink: 0; width: 120px; height: 120px"
+          ></canvas>
+          <div
+            class="pie-legend-wrap"
+            data-taxonomy="{{ taxonomy_name }}"
+            style="font-size: 0.72rem; line-height: 1.8; flex: 1; min-width: 0"
+          >
+            <div class="pie-legend-items"></div>
+            <a
+              href="#"
+              class="pie-toggle"
+              style="font-size: 0.7rem; color: var(--primary); display: none"
+              >展开更多</a
+            >
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+      <div
+        class="pie-group"
+        style="flex: 1; min-width: 160px; max-width: 260px"
+      >
+        <div
+          style="
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 6px;
+            color: var(--text);
+          "
+        >
+          文件类型
+        </div>
+        <div style="display: flex; align-items: flex-start; gap: 10px">
+          <canvas
+            id="fileTypePie"
+            width="120"
+            height="120"
+            style="flex-shrink: 0; width: 120px; height: 120px"
+          ></canvas>
+          <div
+            class="pie-legend-wrap"
+            id="fileTypeLegendWrap"
+            style="font-size: 0.72rem; line-height: 1.8; flex: 1; min-width: 0"
+          >
+            <div class="pie-legend-items" id="fileTypeLegendItems"></div>
+            <a
+              href="#"
+              class="pie-toggle"
+              style="font-size: 0.7rem; color: var(--primary); display: none"
+              >展开更多</a
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-24">
+  <div class="card-header">
+    <h2><i class="ri-bar-chart-line"></i> 近 3 个月上传统计</h2>
+  </div>
+  <div class="card-body" style="padding: 16px">
+    <div
+      style="display: flex; align-items: stretch; gap: 16px; min-height: 180px"
+    >
+      <div style="flex: 1; min-width: 0; display: flex; align-items: stretch">
+        <canvas
+          id="trendCanvas"
+          style="width: 100%; height: 360px; min-height: 180px; flex: 1"
+        ></canvas>
+      </div>
+      <div
+        class="trend-legend-wrap"
+        style="
+          font-size: 0.75rem;
+          line-height: 1.8;
+          width: 320px;
+          flex-shrink: 0;
+          overflow-y: auto;
+        "
+      >
+        <div
+          style="
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text);
+            padding: 4px 6px 6px;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 4px;
+          "
+        >
+          近30日上传量 TOP10
+        </div>
+        <div
+          id="trendLegendItems"
+          style="max-height: 320px; overflow-y: auto"
+        ></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="dashboard-rank-grid">
+  <div class="card">
+    <div class="card-header">
+      <h2><i class="ri-download-line"></i> 下载排行榜 TOP 10</h2>
+    </div>
+    <div class="card-body">
+      <div class="rank-list">
+        {% for resource in top_downloads %}
+        <div class="rank-item">
+          <div
+            class="rank-number rank-{{ loop.index if loop.index <= 3 else 'other' }}"
+          >
+            {% if loop.index == 1 %}<i class="ri-trophy-fill"></i> {% elif
+            loop.index == 2 %}<i class="ri-medal-fill"></i> {% elif loop.index
+            == 3 %}<i class="ri-award-fill"></i>
+            {% else %}{{ loop.index }}{% endif %}
+          </div>
+          <div class="rank-icon badge-{{ resource.file_type }}">
+            {% if resource.file_type == 'image' %}<i class="ri-image-line"></i>
+            {% elif resource.file_type == 'video' %}<i
+              class="ri-video-line"
+            ></i>
+            {% elif resource.file_type == 'pdf' %}<i
+              class="ri-file-pdf-line"
+            ></i>
+            {% elif resource.file_type == 'code' %}<i
+              class="ri-code-s-slash-line"
+            ></i>
+            {% else %}<i class="ri-file-line"></i>{% endif %}
+          </div>
+          <div class="rank-info">
+            <h4>
+              <a href="{{ url_for('resource_detail', id=resource.code) }}"
+                >{{ resource.title }}</a
+              >
+            </h4>
+            <span class="rank-category"
+              >{{ resource.category_name or '未分类' }}</span
+            >
+          </div>
+          <div class="rank-value">
+            <span class="num">{{ resource.downloads }}</span>
+            <span class="lbl">次下载</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="rank-stack">
+    <div class="card">
+      <div class="card-header">
+        <h2><i class="ri-eye-line"></i> 浏览量排行榜 TOP 5</h2>
+      </div>
+      <div class="card-body">
+        <div class="rank-list">
+          {% for resource in top_views %}
+          <div class="rank-item">
+            <div
+              class="rank-number rank-{{ loop.index if loop.index <= 3 else 'other' }}"
+            >
+              {% if loop.index == 1 %}<i class="ri-trophy-fill"></i> {% elif
+              loop.index == 2 %}<i class="ri-medal-fill"></i> {% elif loop.index
+              == 3 %}<i class="ri-award-fill"></i>
+              {% else %}{{ loop.index }}{% endif %}
+            </div>
+            <div class="rank-icon badge-{{ resource.file_type }}">
+              {% if resource.file_type == 'image' %}<i
+                class="ri-image-line"
+              ></i>
+              {% elif resource.file_type == 'video' %}<i
+                class="ri-video-line"
+              ></i>
+              {% elif resource.file_type == 'pdf' %}<i
+                class="ri-file-pdf-line"
+              ></i>
+              {% elif resource.file_type == 'code' %}<i
+                class="ri-code-s-slash-line"
+              ></i>
+              {% else %}<i class="ri-file-line"></i>{% endif %}
+            </div>
+            <div class="rank-info">
+              <h4>
+                <a href="{{ url_for('resource_detail', id=resource.code) }}"
+                  >{{ resource.title }}</a
+                >
+              </h4>
+              <span class="rank-category"
+                >{{ resource.category_name or '未分类' }}</span
+              >
+            </div>
+            <div class="rank-value">
+              <span class="num">{{ resource.views }}</span>
+              <span class="lbl">次浏览</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h2><i class="ri-star-line"></i> 收藏量排行榜 TOP 5</h2>
+      </div>
+      <div class="card-body">
+        <div class="rank-list">
+          {% for resource in top_favorites %}
+          <div class="rank-item">
+            <div
+              class="rank-number rank-{{ loop.index if loop.index <= 3 else 'other' }}"
+            >
+              {% if loop.index == 1 %}<i class="ri-trophy-fill"></i> {% elif
+              loop.index == 2 %}<i class="ri-medal-fill"></i> {% elif loop.index
+              == 3 %}<i class="ri-award-fill"></i>
+              {% else %}{{ loop.index }}{% endif %}
+            </div>
+            <div class="rank-icon badge-{{ resource.file_type }}">
+              {% if resource.file_type == 'image' %}<i
+                class="ri-image-line"
+              ></i>
+              {% elif resource.file_type == 'video' %}<i
+                class="ri-video-line"
+              ></i>
+              {% elif resource.file_type == 'pdf' %}<i
+                class="ri-file-pdf-line"
+              ></i>
+              {% elif resource.file_type == 'code' %}<i
+                class="ri-code-s-slash-line"
+              ></i>
+              {% else %}<i class="ri-file-line"></i>{% endif %}
+            </div>
+            <div class="rank-info">
+              <h4>
+                <a href="{{ url_for('resource_detail', id=resource.code) }}"
+                  >{{ resource.title }}</a
+                >
+              </h4>
+              <span class="rank-category"
+                >{{ resource.category_name or '未分类' }}</span
+              >
+            </div>
+            <div class="rank-value">
+              <span class="num">{{ resource.fav_count }}</span>
+              <span class="lbl">次收藏</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  (function() {
+    var colors = ['#6366f1','#22c55e','#f59e0b','#ef4444','#ec4899','#8b5cf6','#06b6d4','#14b8a6','#f97316','#6b7280'];
+    var SHOW_COUNT = 5;
+
+    function drawPie(canvas, data, legendItemsEl, toggleEl) {
+      var total = data.reduce(function(s, d) { return s + d.count; }, 0);
+      if (!total) return;
+      var sorted = data.slice().sort(function(a, b) { return b.count - a.count; });
+      var pieData = sorted.filter(function(d) { return d.count / total >= 0.01; });
+      var segments = [];
+      var startAngle = -Math.PI / 2;
+      pieData.forEach(function(d, i) {
+        var sweep = (d.count / total) * 2 * Math.PI;
+        segments.push({ name: d.name, count: d.count, pct: (d.count / total * 100).toFixed(1), color: colors[i % colors.length], start: startAngle, end: startAngle + sweep, mid: startAngle + sweep / 2 });
+        startAngle += sweep;
+      });
+
+      var ctx = canvas.getContext('2d');
+      var cx = 60, cy = 60, r = 54, explode = 7;
+      var hoverIdx = -1, animIdx = -1, offsets = new Array(segments.length).fill(0);
+      var tooltip = null, animFrame = null;
+
+      function render() {
+        ctx.clearRect(0, 0, 120, 120);
+        var done = true;
+        segments.forEach(function(s, i) {
+          var target = (i === animIdx) ? explode : 0;
+          var diff = target - offsets[i];
+          if (Math.abs(diff) > 0.3) {
+            done = false;
+            offsets[i] += diff * 0.25;
+          } else {
+            offsets[i] = target;
+          }
+          var off = offsets[i];
+          var ox = Math.cos(s.mid) * off, oy = Math.sin(s.mid) * off;
+          ctx.beginPath();
+          ctx.moveTo(cx + ox, cy + oy);
+          ctx.arc(cx + ox, cy + oy, r, s.start, s.end);
+          ctx.closePath();
+          ctx.fillStyle = s.color;
+          ctx.fill();
+          if (i === animIdx) {
+            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
+        });
+        if (!done) animFrame = requestAnimationFrame(render);
+        else animFrame = null;
+      }
+
+      function animateTo(idx) {
+        animIdx = idx;
+        if (animFrame) cancelAnimationFrame(animFrame);
+        render();
+        animFrame = null;
+      }
+
+      function hitTest(mx, my) {
+        var dx = mx - cx, dy = my - cy;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > r) return -1;
+        var angle = Math.atan2(dy, dx);
+        for (var i = 0; i < segments.length; i++) {
+          var s = segments[i];
+          var sa = s.start, ea = s.end;
+          var a = angle;
+          if (ea - sa >= 2 * Math.PI - 0.001) return i;
+          if (a < sa) a += 2 * Math.PI;
+          if (a >= sa && a < ea) return i;
+        }
+        return -1;
+      }
+
+      function showTooltip(mx, my, seg) {
+        if (!tooltip) {
+          tooltip = document.createElement('div');
+          tooltip.style.cssText = 'position:fixed;background:#1e293b;color:#fff;padding:4px 8px;border-radius:4px;font-size:11px;pointer-events:none;z-index:9999;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
+          document.body.appendChild(tooltip);
+        }
+        var rect = canvas.getBoundingClientRect();
+        tooltip.textContent = seg.name + ': ' + seg.count + ' (' + seg.pct + '%)';
+        tooltip.style.left = (rect.left + mx + 12) + 'px';
+        tooltip.style.top = (rect.top + my - 8) + 'px';
+      }
+
+      function hideTooltip() {
+        if (tooltip) { tooltip.remove(); tooltip = null; }
+      }
+
+      canvas.addEventListener('mousemove', function(e) {
+        var rect = canvas.getBoundingClientRect();
+        var mx = e.clientX - rect.left, my = e.clientY - rect.top;
+        var idx = hitTest(mx, my);
+        if (idx !== hoverIdx) {
+          hoverIdx = idx;
+          animateTo(hoverIdx);
+        }
+        if (idx >= 0) showTooltip(mx, my, segments[idx]);
+        else hideTooltip();
+        canvas.style.cursor = idx >= 0 ? 'pointer' : '';
+      });
+
+      canvas.addEventListener('mouseleave', function() {
+        if (hoverIdx !== -1) { hoverIdx = -1; animateTo(-1); }
+        hideTooltip();
+      });
+
+      legendItemsEl.innerHTML = '';
+      var items = [];
+      sorted.forEach(function(d, i) {
+        var c = colors[i % colors.length];
+        for (var k = 0; k < segments.length; k++) {
+          if (segments[k].name === d.name) { c = segments[k].color; break; }
+        }
+        var item = document.createElement('div');
+        item.style.cssText = 'display:flex;align-items:center;gap:5px;padding:1px 6px 1px 4px;border-radius:4px;transition:background .15s;';
+        var dot = document.createElement('span');
+        dot.style.cssText = 'display:inline-block;width:8px;height:8px;border-radius:50%;background:' + c + ';flex-shrink:0;';
+        item.appendChild(dot);
+        var txt = document.createElement('span');
+        txt.textContent = d.name;
+        txt.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;color:var(--text);';
+        item.appendChild(txt);
+        var cnt = document.createElement('span');
+        cnt.textContent = d.count;
+        cnt.style.cssText = 'font-weight:600;color:var(--text);flex-shrink:0;';
+        item.appendChild(cnt);
+        var pctEl = document.createElement('span');
+        pctEl.textContent = (d.count / total * 100).toFixed(1) + '%';
+        pctEl.style.cssText = 'color:var(--text-muted);font-size:.68rem;flex-shrink:0;min-width:32px;text-align:right;';
+        item.appendChild(pctEl);
+        item.style.cursor = 'pointer';
+        item.addEventListener('mouseenter', function() {
+          var si = -1;
+          for (var t = 0; t < segments.length; t++) { if (segments[t].name === d.name) { si = t; break; } }
+          if (hoverIdx !== si) { hoverIdx = si; animateTo(si); }
+          this.style.background = 'rgba(99,102,241,0.08)';
+        });
+        item.addEventListener('mouseleave', function() {
+          if (hoverIdx !== -1) { hoverIdx = -1; animateTo(-1); }
+          this.style.background = '';
+        });
+        items.push(item);
+      });
+
+      items.forEach(function(el, idx) {
+        if (idx < SHOW_COUNT) {
+          legendItemsEl.appendChild(el);
+        } else {
+          el.style.display = 'none';
+          el.style.opacity = '0.7';
+          el.style.paddingLeft = '6px';
+          legendItemsEl.appendChild(el);
+        }
+      });
+
+      if (items.length > SHOW_COUNT) {
+        var expanded = false;
+        toggleEl.style.cssText = 'display:inline-flex;align-items:center;gap:3px;margin-top:4px;font-size:.72rem;color:var(--primary);cursor:pointer;padding:3px 10px;border-radius:5px;transition:all .15s;border:1px dashed var(--border);';
+        toggleEl.textContent = '\u5c55\u5f00\u5168\u90e8 ' + (items.length - SHOW_COUNT) + ' \u9879';
+        toggleEl.addEventListener('mouseenter', function() { this.style.background = 'rgba(99,102,241,0.06)'; this.style.borderColor = 'var(--primary)'; });
+        toggleEl.addEventListener('mouseleave', function() { this.style.background = ''; this.style.borderColor = 'var(--border)'; });
+        toggleEl.onclick = function(e) {
+          e.preventDefault();
+          expanded = !expanded;
+          items.forEach(function(el, idx) {
+            if (idx >= SHOW_COUNT) {
+              el.style.display = expanded ? 'flex' : 'none';
+              el.style.opacity = expanded ? '0.75' : '0.7';
+            }
+          });
+          toggleEl.innerHTML = expanded ? '<i class="ri-subtract-line" style="font-size:10px;"></i> \u6536\u8d77' : '\u5c55\u5f00\u5168\u90e8 ' + (items.length - SHOW_COUNT) + ' \u9879';
+        };
+      }
+
+      animateTo(-1);
+    }
+
+    // Taxonomy pie charts
+    document.querySelectorAll('.taxonomyPieCanvas').forEach(function(cvs) {
+      var tax = cvs.dataset.taxonomy;
+      var wrap = document.querySelector('.pie-legend-wrap[data-taxonomy="' + tax + '"]');
+      var data = {{ taxonomy_pies|tojson }};
+      drawPie(cvs, data[tax] || [], wrap.querySelector('.pie-legend-items'), wrap.querySelector('.pie-toggle'));
+    });
+
+    // File type pie chart
+    var ftCanvas = document.getElementById('fileTypePie');
+    if (ftCanvas) {
+      var ftData = {{ file_type_stats|tojson }};
+      var labels = {image:'\u56fe\u7247',video:'\u89c6\u9891',audio:'\u97f3\u9891',pdf:'PDF',doc:'\u6587\u6863',code:'\u4ee3\u7801',archive:'\u538b\u7f29\u5305',spreadsheet:'\u8868\u683c',presentation:'\u6f14\u793a',text:'\u6587\u672c'};
+      var labeled = ftData.map(function(d) { return {name: labels[d.file_type] || d.file_type, count: d.count}; });
+      drawPie(ftCanvas, labeled, document.getElementById('fileTypeLegendItems'), document.querySelector('#fileTypeLegendWrap .pie-toggle'));
+    }
+
+  // Upload trend vertical bar chart
+  var trendCanvas = document.getElementById('trendCanvas');
+  if (trendCanvas) {
+    var trendData = {{ upload_trend|tojson }};
+    if (trendData.length > 0) {
+      var rect = trendCanvas.getBoundingClientRect();
+      var dpr = window.devicePixelRatio || 1;
+      trendCanvas.width = rect.width * dpr;
+      trendCanvas.height = rect.height * dpr;
+      var ctx = trendCanvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      var w = rect.width, h = rect.height;
+      var padL = 28, padR = 4, padT = 20, padB = 20;
+      var maxCount = 1;
+      trendData.forEach(function(d) { if (d.count > maxCount) maxCount = d.count; });
+      var chartW = w - padL - padR;
+      var chartH = h - padT - padB;
+      var barW = Math.max(6, Math.min(36, chartW / trendData.length - 3));
+
+      var barRects = [];
+      trendData.forEach(function(d, i) {
+        var barH = Math.max(2, (d.count / maxCount) * chartH);
+        var x = padL + i * ((chartW) / trendData.length) + ((chartW) / trendData.length - barW) / 2;
+        var y = padT + chartH - barH;
+        barRects.push({ x: x, y: y, w: barW, h: barH, idx: i });
+      });
+
+      var hoverIdx = -1;
+      var prevHoverIdx = -1;
+      var transStart = 0;
+      var transDur = 200;
+
+      function barState(hover, i) {
+        if (hover < 0) return { a:1, sb:0, ex:0, sw:0, ss:'', fn:'bold 10px sans-serif', fc:'#0f172a', dc:'#64748b', ds:'9px sans-serif' };
+        if (hover === i) return { a:1, sb:14, ex:2, sw:2.5, ss:'rgba(255,255,255,0.85)', fn:'bold 11px sans-serif', fc:'#0f172a', dc:'#0f172a', ds:'bold 10px sans-serif' };
+        return { a:0.25, sb:0, ex:0, sw:0, ss:'', fn:'bold 10px sans-serif', fc:'#64748b', dc:'#64748b', ds:'9px sans-serif' };
+      }
+
+      function lerp(a, b, t) { return a + (b - a) * t; }
+
+      function drawTrend() {
+        var now = Date.now();
+        var t = transStart ? Math.min(1, (now - transStart) / transDur) : 1;
+        var te = t < 1 ? t * t * (3 - 2 * t) : 1; // smoothstep ease
+
+        ctx.clearRect(0, 0, w, h);
+
+        trendData.forEach(function(d, i) {
+          var br = barRects[i];
+          var barH = br.h, x = br.x, y = br.y;
+
+          var fromS = barState(prevHoverIdx, i);
+          var toS = barState(hoverIdx, i);
+
+          var alpha = lerp(fromS.a, toS.a, te);
+          var sb = lerp(fromS.sb, toS.sb, te);
+          var ex = lerp(fromS.ex, toS.ex, te);
+          var sw = lerp(fromS.sw, toS.sw, te);
+
+          ctx.globalAlpha = alpha;
+          if (sb > 0) { ctx.shadowColor = 'rgba(99,102,241,0.5)'; ctx.shadowBlur = sb; }
+          ctx.fillStyle = colors[i % colors.length];
+          ctx.fillRect(x - ex/2, y - ex/2, barW + ex, barH + ex);
+          ctx.shadowColor = 'transparent';
+          ctx.shadowBlur = 0;
+          ctx.globalAlpha = 1;
+
+          if (sw > 0) {
+            ctx.strokeStyle = toS.ss;
+            ctx.lineWidth = sw;
+            ctx.strokeRect(x - ex/2, y - ex/2, barW + ex, barH + ex);
+          }
+
+          var cfn = te < 1 ? (lerp(10, 11, te) >= 10.5 ? 'bold 11px sans-serif' : 'bold 10px sans-serif') : toS.fn;
+          ctx.fillStyle = toS.fc;
+          ctx.font = cfn;
+          ctx.textAlign = 'center';
+          ctx.fillText(d.count, x + barW / 2, y - 5);
+
+          ctx.fillStyle = toS.dc;
+          ctx.font = toS.ds;
+          ctx.textAlign = 'center';
+          ctx.fillText(d.date.slice(5), x + barW / 2, h - 4);
+        });
+
+        if (t < 1) requestAnimationFrame(drawTrend);
+      }
+
+      function setHover(idx) {
+        if (idx === hoverIdx) return;
+        prevHoverIdx = hoverIdx;
+        hoverIdx = idx;
+        transStart = Date.now();
+        drawTrend();
+        trendCanvas.style.cursor = idx >= 0 ? 'pointer' : '';
+      }
+
+      function hitTest(mx, my) {
+        for (var i = 0; i < barRects.length; i++) {
+          var br = barRects[i];
+          if (mx >= br.x && mx <= br.x + br.w && my >= br.y && my <= br.y + br.h) return i;
+        }
+        return -1;
+      }
+
+      trendCanvas.addEventListener('mousemove', function(e) {
+        var r = trendCanvas.getBoundingClientRect();
+        var mx = e.clientX - r.left, my = e.clientY - r.top;
+        setHover(hitTest(mx, my));
+      });
+
+      trendCanvas.addEventListener('mouseleave', function() {
+        setHover(-1);
+      });
+
+      drawTrend();
+      prevHoverIdx = -1; hoverIdx = -1; transStart = 0;
+      window.addEventListener('resize', function() {
+        var r = trendCanvas.getBoundingClientRect();
+        trendCanvas.width = r.width * dpr;
+        trendCanvas.height = r.height * dpr;
+        ctx.scale(dpr, dpr);
+        w = r.width; h = r.height;
+        chartW = w - padL - padR;
+        chartH = h - padT - padB;
+        barW = Math.max(6, Math.min(36, chartW / trendData.length - 3));
+        barRects = [];
+        trendData.forEach(function(d, i) {
+          var barH = Math.max(2, (d.count / maxCount) * chartH);
+          var x = padL + i * ((chartW) / trendData.length) + ((chartW) / trendData.length - barW) / 2;
+          var y = padT + chartH - barH;
+          barRects.push({ x: x, y: y, w: barW, h: barH, idx: i });
+        });
+        transStart = 0; drawTrend();
+      });
+
+        // Legend (right side)
+        var legendEl = document.getElementById('trendLegendItems');
+        legendEl.innerHTML = '';
+        var top10 = trendData.slice().sort(function(a, b) { return b.count - a.count; }).slice(0, 10);
+        top10.forEach(function(d) {
+          var origIdx = trendData.indexOf(d);
+          var item = document.createElement('div');
+          item.style.cssText = 'display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:6px;font-size:.78rem;line-height:1.8;cursor:pointer;transition:background .15s;';
+          item.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + colors[origIdx % colors.length] + ';flex-shrink:0;"></span>' +
+            '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);font-size:.78rem;">' + d.date.slice(5) + '</span>' +
+            '<span style="font-weight:700;color:var(--text);flex-shrink:0;font-size:.82rem;">' + d.count + '</span>';
+          item.addEventListener('mouseenter', function() {
+            setHover(origIdx);
+            this.style.background = 'rgba(99,102,241,0.08)';
+          });
+          item.addEventListener('mouseleave', function() {
+            setHover(-1);
+            this.style.background = '';
+          });
+          legendEl.appendChild(item);
+        });
+      }
+    }
+  })();
+</script>
+{% endblock %}

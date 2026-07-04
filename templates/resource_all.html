@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}全部资源 - 学习资源管理系统{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('home') }}">首页</a>
+    <i class="ri-arrow-right-s-line"></i>
+    <span class="current">全部资源</span>
+</div>
+<div class="page-header">
+    <div>
+        <h1><i class="ri-folder-line"></i>全部资源</h1>
+        <p class="page-subtitle">共 {{ total }} 个学习资源</p>
+    </div>
+    <a href="{{ url_for('resource_upload') }}" class="btn btn-primary"><i class="ri-upload-cloud-2-line"></i> 上传资源</a>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+    <div class="filter-left" style="display:flex;flex-direction:column;gap:8px;width:100%;">
+        {% for tax in taxonomies %}
+        {% set cat_val = selected.get(tax.slug) %}
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
+            <span class="filter-label" style="min-width:56px;">{{ tax.name }}：</span>
+            <div class="filter-tags">
+                {% set other_selected = selected | prefix_keys('cat_') %}
+                {% set _ = other_selected.pop('cat_' + tax.slug, '') %}
+                <a href="{{ url_for('resource_all', sort=sort, **other_selected) }}" class="filter-tag {% if not cat_val %}active{% endif %}">全部</a>
+                {% for cat in tax.categories %}
+                {% set new_selected = selected | prefix_keys('cat_') %}
+                {% set _ = new_selected.update({'cat_' + tax.slug: cat.id}) %}
+                <a href="{{ url_for('resource_all', sort=sort, **new_selected) }}" class="filter-tag {% if cat_val == cat.id %}active{% endif %}">{{ cat.name }}</a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap;">
+            <span class="filter-label" style="min-width:56px;font-size:.82rem;color:var(--text-secondary);">排序：</span>
+            <select class="form-control" style="width:auto;min-width:130px;" onchange="var p=new URLSearchParams(window.location.search);p.set('sort',this.value);p.delete('page');window.location='{{ url_for('resource_all') }}?'+p.toString()">
+                <option value="created_at" {% if sort == 'created_at' %}selected{% endif %}>最新上传</option>
+                <option value="created_at_asc" {% if sort == 'created_at_asc' %}selected{% endif %}>最早上传</option>
+                <option value="downloads" {% if sort == 'downloads' %}selected{% endif %}>最多下载</option>
+                <option value="views" {% if sort == 'views' %}selected{% endif %}>最多浏览</option>
+                <option value="title" {% if sort == 'title' %}selected{% endif %}>名称 A-Z</option>
+                <option value="title_desc" {% if sort == 'title_desc' %}selected{% endif %}>名称 Z-A</option>
+            </select>
+            {% set qs = request.args.to_dict() %}
+            {% if my_uploads %}{% set _ = qs.pop('my_uploads') %}{% endif %}
+            <a href="{{ url_for('resource_all', **qs) if my_uploads else url_for('resource_all', my_uploads=1, **request.args.to_dict()) }}" class="filter-tag {% if my_uploads %}active{% endif %}"><i class="ri-user-line"></i> 我上传的</a>
+        </div>
+    </div>
+</div>
+
+{% if resources %}
+<form id="batchForm" method="post" action="{{ url_for('resource_all_batch_delete') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" name="page" value="{{ page }}">
+{% for slug, cat_id in selected.items() %}
+<input type="hidden" name="cat_{{ slug }}" value="{{ cat_id }}">
+{% endfor %}
+
+<div id="batchToolbar" class="batch-toolbar" style="display:none;">
+    <label class="batch-select-all">
+        <input type="checkbox" id="selectAll"> 全选
+    </label>
+    <span id="selectedCount" class="selected-count">已选 0 项</span>
+    <button type="submit" class="btn btn-danger btn-sm" id="batchDeleteBtn" onclick="return confirm('确定永久删除选中的资源？此操作不可恢复。');">
+        <i class="ri-delete-bin-line"></i> 删除资源
+    </button>
+</div>
+
+<div class="resource-grid">
+    {% for r in resources %}
+    <div class="resource-card" data-code="{{ r.code }}">
+        <div class="resource-card-top">
+            <label class="favorite-checkbox" onclick="event.stopPropagation();">
+                <input type="checkbox" name="codes" value="{{ r.code }}" class="fav-checkbox">
+            </label>
+            <div class="resource-badge badge-{{ r.file_type }}">
+                {% if r.file_type == 'image' %}<i class="ri-image-line"></i> 图片
+                {% elif r.file_type == 'video' %}<i class="ri-video-line"></i> 视频
+                {% elif r.file_type == 'audio' %}<i class="ri-music-line"></i> 音频
+                {% elif r.file_type == 'pdf' %}<i class="ri-file-pdf-line"></i> PDF
+                {% elif r.file_type == 'doc' %}<i class="ri-file-word-line"></i> 文档
+                {% elif r.file_type == 'code' %}<i class="ri-code-s-slash-line"></i> 代码
+                {% elif r.file_type == 'archive' %}<i class="ri-file-zip-line"></i> 压缩包
+                {% elif r.file_type == 'spreadsheet' %}<i class="ri-file-excel-line"></i> 表格
+                {% elif r.file_type == 'presentation' %}<i class="ri-file-ppt-line"></i> 演示
+                {% else %}<i class="ri-file-line"></i> 其他{% endif %}
+            </div>
+        </div>
+        <div class="resource-card-body">
+            <h3 class="resource-card-title"><a href="{{ url_for('resource_detail', id=r.code) }}">{{ r.title }}</a></h3>
+            <p class="resource-card-desc">{{ r.description or '暂无描述' }}</p>
+            <div class="resource-card-meta">
+                <span><i class="ri-folder-line"></i> {{ r.category_name or '未分类' }}</span>
+                <span><i class="ri-database-2-line"></i> {{ r.file_size | filesize }}</span>
+            </div>
+        </div>
+        <div class="resource-card-footer">
+            <div class="resource-stats">
+                <span><i class="ri-download-line"></i> {{ r.downloads }}</span>
+                <span><i class="ri-eye-line"></i> {{ r.views }}</span>
+            </div>
+            <div class="resource-actions">
+                <a href="{{ url_for('resource_preview', resource_id=r.code) }}" class="action-btn" title="预览"><i class="ri-eye-line"></i></a>
+                <a href="{{ url_for('resource_download', resource_id=r.code) }}" class="action-btn" title="下载"><i class="ri-download-line"></i></a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+</form>
+
+{% if total_pages > 1 %}
+{% set filter_params = selected | prefix_keys('cat_') %}
+{% set _ = filter_params.update({'sort': sort}) %}
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="{{ url_for('resource_all', page=page-1, **filter_params) }}" class="page-btn"><i class="ri-arrow-left-s-line"></i> 上一页</a>
+    {% endif %}
+    <div class="page-numbers">
+        {% for p in range(1, total_pages + 1) %}
+            {% if p == page %}
+            <span class="page-btn active">{{ p }}</span>
+            {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 4) %}
+            <a href="{{ url_for('resource_all', page=p, **filter_params) }}" class="page-btn">{{ p }}</a>
+            {% elif p == page - 3 or p == page + 5 %}
+            <span class="page-dots">...</span>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% if page < total_pages %}
+    <a href="{{ url_for('resource_all', page=page+1, **filter_params) }}" class="page-btn">下一页 <i class="ri-arrow-right-s-line"></i></a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <i class="ri-folder-open-line"></i>
+    <h3>暂无资源</h3>
+    <p>还没有上传任何学习资源</p>
+    <a href="{{ url_for('resource_upload') }}" class="btn btn-primary"><i class="ri-upload-cloud-2-line"></i> 上传第一个资源</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var checkboxes = document.querySelectorAll('.fav-checkbox');
+    var toolbar = document.getElementById('batchToolbar');
+    var selectAll = document.getElementById('selectAll');
+    var selectedCount = document.getElementById('selectedCount');
+
+    function updateToolbar() {
+        var checked = document.querySelectorAll('.fav-checkbox:checked');
+        var count = checked.length;
+        selectedCount.textContent = '已选 ' + count + ' 项';
+        toolbar.style.display = count > 0 ? 'flex' : 'none';
+        if (selectAll) {
+            selectAll.checked = count === checkboxes.length && checkboxes.length > 0;
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+            updateToolbar();
+        });
+    }
+
+    checkboxes.forEach(function(cb) {
+        cb.addEventListener('change', updateToolbar);
+    });
+})();
+</script>
+{% endblock %}

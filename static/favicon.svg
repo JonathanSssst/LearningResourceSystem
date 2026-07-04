@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+    <linearGradient id="page1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="page2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#c4b5fd"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+    <linearGradient id="folder" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.25)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.08)"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 圆角方底 -->
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="url(#bg)"/>
+
+  <!-- 白色圆形衬底 -->
+  <circle cx="256" cy="258" r="160" fill="rgba(255,255,255,0.12)"/>
+
+  <!-- 文件夹轮廓 -->
+  <path d="M160 200 h80 l24 -28 h96 a24 24 0 0 1 24 24 v112 a24 24 0 0 1 -24 24 h-200 a24 24 0 0 1 -24 -24 v-108 a0 0 0 0 1 0 0 z"
+        fill="url(#folder)" stroke="rgba(255,255,255,0.5)" stroke-width="3"/>
+
+  <!-- 文件夹标签 -->
+  <path d="M160 200 h80 l24 -28 h96" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="3"/>
+
+  <!-- 书 - 左页 -->
+  <path d="M216 210 q40 -10 80 0 v140 q-40 -10 -80 0 z"
+        fill="url(#page1)" opacity="0.95"/>
+  <!-- 书 - 右页 -->
+  <path d="M296 210 q-40 -10 -80 0 v140 q40 -10 80 0 z"
+        fill="url(#page2)" opacity="0.95"/>
+  <!-- 书脊 -->
+  <line x1="256" y1="205" x2="256" y2="350"
+        stroke="rgba(255,255,255,0.6)" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- 书页文字线 -->
+  <g stroke="rgba(255,255,255,0.5)" stroke-width="2" stroke-linecap="round">
+    <line x1="232" y1="240" x2="278" y2="238"/>
+    <line x1="230" y1="258" x2="274" y2="256"/>
+    <line x1="228" y1="276" x2="270" y2="274"/>
+    <line x1="226" y1="294" x2="266" y2="292"/>
+  </g>
+
+  <!-- AI 星芒 -->
+  <g transform="translate(296, 170)">
+    <circle cx="0" cy="0" r="4" fill="#fbbf24"/>
+    <path d="M0 -16 l3 9 l9 -2 l-6 7 l8 5 l-9 2 l1 10 l-6 -7 l-6 7 l1 -10 l-9 -2 l8 -5 l-6 -7 l9 2 z"
+          fill="#fbbf24" opacity="0.9"/>
+    <!-- 小装饰星点 -->
+    <circle cx="-22" cy="-8" r="2.5" fill="#fbbf24" opacity="0.6"/>
+    <circle cx="24" cy="6" r="2" fill="#fbbf24" opacity="0.5"/>
+  </g>
+</svg>

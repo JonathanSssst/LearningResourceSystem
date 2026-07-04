@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}预览 - {{ resource.title }}{% endblock %}
+
+{% block content %}
+<div class="preview-header">
+    <a href="{{ url_for('resource_detail', id=resource.code) }}" class="btn btn-outline"><i class="ri-arrow-left-line"></i> 返回详情</a>
+    <h2>{{ resource.title }}</h2>
+    <a href="{{ url_for('resource_download', resource_id=resource.code) }}" class="btn btn-primary"><i class="ri-download-line"></i> 下载文件</a>
+</div>
+
+{% if preview_type == 'text' %}
+<div class="text-preview-box">
+    <div class="preview-meta">
+        <span><i class="ri-file-line"></i> {{ resource.original_filename }}</span>
+        <span><i class="ri-database-2-line"></i> {{ resource.file_size | filesize }}</span>
+    </div>
+    <div class="code-block"><code>{{ content }}</code></div>
+    {% if content|length >= 50000 %}
+    <div class="preview-note"><i class="ri-information-line"></i> 文件内容较长，仅显示前 50KB</div>
+    {% endif %}
+</div>
+{% elif preview_type == 'image' %}
+<div class="image-preview-box" style="text-align:center;">
+    <img src="{{ url_for('resource_preview', resource_id=resource.code) }}" alt="{{ resource.title }}" style="max-width:100%;max-height:80vh;border-radius:var(--radius);box-shadow:var(--shadow-xl);">
+</div>
+{% elif preview_type == 'pdf' %}
+<div class="pdf-preview-box" style="text-align:center;background:var(--bg-secondary);border-radius:var(--radius);padding:12px;">
+    <div class="preview-meta" style="margin-bottom:12px;justify-content:center;">
+        <span><i class="ri-file-pdf-line"></i> {{ resource.original_filename }}</span>
+        <span><i class="ri-database-2-line"></i> {{ resource.file_size | filesize }}</span>
+    </div>
+    <embed src="{{ url_for('resource_preview', resource_id=resource.code) }}?raw=1" type="application/pdf" style="width:100%;height:80vh;border-radius:var(--radius-xs);border:1px solid var(--border);">
+</div>
+{% elif preview_type == 'video' %}
+<div class="media-preview-box" style="text-align:center;background:#000;border-radius:var(--radius);padding:20px;">
+    <video src="{{ url_for('resource_preview', resource_id=resource.code) }}" controls style="max-width:100%;max-height:80vh;border-radius:var(--radius-xs);"></video>
+</div>
+{% elif preview_type == 'audio' %}
+<div class="media-preview-box" style="text-align:center;padding:80px 20px;background:var(--bg-secondary);border-radius:var(--radius);">
+    <i class="ri-music-line" style="font-size:4rem;display:block;margin-bottom:24px;color:var(--primary);opacity:.6;"></i>
+    <p style="margin-bottom:24px;color:var(--text-secondary);">{{ resource.original_filename }}</p>
+    <audio src="{{ url_for('resource_preview', resource_id=resource.code) }}" controls style="width:100%;max-width:600px;"></audio>
+</div>
+{% else %}
+<div class="unsupported-preview" style="text-align:center;padding:60px 20px;color:var(--text-secondary);">
+    <i style="font-size:4rem;display:block;margin-bottom:16px;opacity:.4;" class="ri-file-unknow-line"></i>
+    <h3 style="font-size:1.1rem;margin-bottom:8px;color:var(--text);">该文件类型暂不支持在线预览</h3>
+    <p>文件类型：{{ resource.file_type | upper }}</p>
+    <p>文件名：{{ resource.original_filename }}</p>
+    <p>文件大小：{{ resource.file_size | filesize }}</p>
+    <a href="{{ url_for('resource_download', resource_id=resource.code) }}" class="btn btn-primary btn-lg" style="margin-top:16px;"><i class="ri-download-line"></i> 下载文件查看</a>
+</div>
+{% endif %}
+{% endblock %}

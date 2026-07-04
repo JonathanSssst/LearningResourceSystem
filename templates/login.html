@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}登录 - 学习资源管理系统{% endblock %}
+
+{% block auth_content %}
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <img src="{{ url_for('static', filename='favicon.svg') }}" alt="LRS" style="width:28px;height:28px">
+        </div>
+        <div class="auth-header">
+            <h1>学习资源管理系统</h1>
+            <p>Learning Resource System</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <i class="ri-information-line"></i> {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="post" action="{{ url_for('login') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label for="username"><i class="ri-user-line"></i> 用户名</label>
+                <input type="text" id="username" name="username" class="form-control" placeholder="请输入用户名" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password"><i class="ri-lock-line"></i> 密码</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="请输入密码" required>
+            </div>
+
+            <div class="form-group" style="margin-bottom:4px;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
+                    <input type="checkbox" name="remember" value="1" checked style="width:16px;height:16px;accent-color:var(--primary);">
+                    <span style="font-size:.85rem;font-weight:400;">记住我（30天内免登录）</span>
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg">
+                <i class="ri-login-box-line"></i> 登录
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p style="margin-top:8px;">没有账号？<a href="{{ url_for('register') }}" style="color:var(--primary);font-weight:600;">立即注册</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

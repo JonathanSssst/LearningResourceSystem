@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}我的收藏 - 学习资源管理系统{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1><i class="ri-star-line"></i>我的收藏</h1>
+        <p class="page-subtitle">共 {{ total }} 个收藏的资源</p>
+    </div>
+</div>
+
+{% if resources %}
+<form id="batchForm" method="post" action="{{ url_for('favorites_batch_delete') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" name="page" value="{{ page }}">
+
+<div id="batchToolbar" class="batch-toolbar" style="display:none;">
+    <label class="batch-select-all">
+        <input type="checkbox" id="selectAll"> 全选
+    </label>
+    <span id="selectedCount" class="selected-count">已选 0 项</span>
+    <button type="submit" class="btn btn-danger btn-sm" id="batchDeleteBtn" onclick="return confirm('确定取消选中资源的收藏？');">
+        <i class="ri-delete-bin-line"></i> 取消收藏
+    </button>
+</div>
+
+<div class="resource-grid">
+    {% for r in resources %}
+    <div class="resource-card" data-code="{{ r.code }}">
+        <div class="resource-card-top">
+            <label class="favorite-checkbox" onclick="event.stopPropagation();">
+                <input type="checkbox" name="codes" value="{{ r.code }}" class="fav-checkbox">
+            </label>
+            <div class="resource-badge badge-{{ r.file_type }}">
+                {% if r.file_type == 'image' %}<i class="ri-image-line"></i> 图片
+                {% elif r.file_type == 'video' %}<i class="ri-video-line"></i> 视频
+                {% elif r.file_type == 'audio' %}<i class="ri-music-line"></i> 音频
+                {% elif r.file_type == 'pdf' %}<i class="ri-file-pdf-line"></i> PDF
+                {% elif r.file_type == 'doc' %}<i class="ri-file-word-line"></i> 文档
+                {% elif r.file_type == 'code' %}<i class="ri-code-s-slash-line"></i> 代码
+                {% elif r.file_type == 'archive' %}<i class="ri-file-zip-line"></i> 压缩包
+                {% else %}<i class="ri-file-line"></i> 其他{% endif %}
+            </div>
+            <span style="color:var(--warning);font-size:1rem;"><i class="ri-star-fill"></i></span>
+        </div>
+        <div class="resource-card-body">
+            <h3 class="resource-card-title"><a href="{{ url_for('resource_detail', id=r.code) }}">{{ r.title }}</a></h3>
+            <p class="resource-card-desc">{{ r.description or '暂无描述' }}</p>
+            <div class="resource-card-meta">
+                <span><i class="ri-folder-line"></i> {{ r.category_name or '未分类' }}</span>
+                <span><i class="ri-database-2-line"></i> {{ r.file_size | filesize }}</span>
+            </div>
+        </div>
+        <div class="resource-card-footer">
+            <div class="resource-stats">
+                <span><i class="ri-download-line"></i> {{ r.downloads }}</span>
+                <span><i class="ri-eye-line"></i> {{ r.views }}</span>
+            </div>
+            <div class="resource-actions">
+                <form method="post" action="{{ url_for('resource_favorite', resource_id=r.code) }}" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="action-btn warning" title="取消收藏"><i class="ri-star-fill"></i></button>
+                </form>
+                <a href="{{ url_for('resource_download', resource_id=r.code) }}" class="action-btn" title="下载"><i class="ri-download-line"></i></a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+</form>
+
+{% if total_pages > 1 %}
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="{{ url_for('favorites', page=page-1) }}" class="page-btn"><i class="ri-arrow-left-s-line"></i> 上一页</a>
+    {% endif %}
+    <div class="page-numbers">
+        {% for p in range(1, total_pages + 1) %}
+            {% if p == page %}
+            <span class="page-btn active">{{ p }}</span>
+            {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+            <a href="{{ url_for('favorites', page=p) }}" class="page-btn">{{ p }}</a>
+            {% elif p == page - 3 or p == page + 3 %}
+            <span class="page-dots">...</span>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% if page < total_pages %}
+    <a href="{{ url_for('favorites', page=page+1) }}" class="page-btn">下一页 <i class="ri-arrow-right-s-line"></i></a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <i class="ri-star-line"></i>
+    <h3>还没有收藏任何资源</h3>
+    <p style="color:var(--text-muted);">浏览资源时点击收藏按钮，即可添加到这里</p>
+    <a href="{{ url_for('resource_all') }}" class="btn btn-primary"><i class="ri-folder-line"></i> 浏览资源</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var checkboxes = document.querySelectorAll('.fav-checkbox');
+    var toolbar = document.getElementById('batchToolbar');
+    var selectAll = document.getElementById('selectAll');
+    var selectedCount = document.getElementById('selectedCount');
+
+    function updateToolbar() {
+        var checked = document.querySelectorAll('.fav-checkbox:checked');
+        var count = checked.length;
+        selectedCount.textContent = '已选 ' + count + ' 项';
+        toolbar.style.display = count > 0 ? 'flex' : 'none';
+        if (selectAll) {
+            selectAll.checked = count === checkboxes.length && checkboxes.length > 0;
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+            updateToolbar();
+        });
+    }
+
+    checkboxes.forEach(function(cb) {
+        cb.addEventListener('change', updateToolbar);
+    });
+})();
+</script>
+{% endblock %}

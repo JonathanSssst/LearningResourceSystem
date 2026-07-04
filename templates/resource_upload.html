@@ -1,0 +1,555 @@
+{% extends "base.html" %} {% block title %}上传资源 - 学习资源管理系统{%
+endblock %} {% block content %}
+<div class="page-header">
+  <div>
+    <h1><i class="ri-upload-cloud-2-line"></i>上传资源</h1>
+    <p class="page-subtitle">
+      支持文档、图片、视频、音频、代码等格式，单个文件最大 100MB
+    </p>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <button
+    class="tab-btn active"
+    data-tab="single"
+    onclick="switchTab('single')"
+  >
+    <i class="ri-file-add-line"></i> 单个上传
+  </button>
+  <button class="tab-btn" data-tab="batch" onclick="switchTab('batch')">
+    <i class="ri-folder-add-line"></i> 批量上传
+  </button>
+</div>
+
+<div id="tab-single" class="tab-panel active">
+  <div class="grid-2-wide">
+    <div class="card">
+      <div class="card-body">
+        <form
+          method="post"
+          action="{{ url_for('resource_upload') }}"
+          enctype="multipart/form-data"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="form-group">
+            <label for="title">资源标题 <span class="required">*</span></label>
+            <input
+              type="text"
+              id="title"
+              name="title"
+              class="form-control"
+              placeholder="请输入资源标题"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="description">资源描述</label>
+            <textarea
+              id="description"
+              name="description"
+              class="form-control"
+              rows="4"
+              placeholder="请输入资源描述（可选）"
+            ></textarea>
+          </div>
+
+          {% for tax in taxonomies %}
+          <div class="form-group">
+            <label for="cat_{{ tax.slug }}">{{ tax.name }}</label>
+            <select
+              id="cat_{{ tax.slug }}"
+              name="cat_{{ tax.slug }}"
+              class="form-control"
+            >
+              <option value="">请选择{{ tax.name }}（可选）</option>
+              {% for cat in tax.categories %}
+              <option value="{{ cat.id }}">{{ cat.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endfor %}
+
+          <div class="form-group">
+            <label>选择文件 <span class="required">*</span></label>
+            <div class="upload-area" id="dropZone">
+              <input type="file" id="file" name="file" required />
+              <div class="upload-placeholder">
+                <i class="ri-upload-cloud-2-line"></i>
+                <p>点击或拖拽文件到此处上传</p>
+                <p class="upload-hint">
+                  支持文档、图片、视频、音频、代码、压缩包等格式，最大 100MB
+                </p>
+              </div>
+              <div class="upload-file-info" id="fileInfo" style="display: none">
+                <i class="ri-file-line"></i>
+                <span class="upload-filename" id="fileName"></span>
+                <span class="upload-filesize" id="fileSize"></span>
+                <button type="button" class="upload-remove" id="removeFile">
+                  <i class="ri-close-line"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 12px; margin-top: 8px">
+            <a href="{{ url_for('resource_all') }}" class="btn btn-outline"
+              ><i class="ri-arrow-left-line"></i> 返回</a
+            >
+            <button
+              type="button"
+              id="analyzeBtn"
+              class="btn btn-outline"
+              style="
+                display: none;
+                border-color: var(--accent);
+                color: var(--accent);
+              "
+            >
+              <i class="ri-sparkling-line"></i> AI 智能分析
+            </button>
+            <button type="submit" class="btn btn-primary" id="submitBtn">
+              <i class="ri-upload-cloud-2-line"></i> 上传资源
+            </button>
+          </div>
+          <div
+            id="analyzeStatus"
+            class="analyze-status"
+            style="display: none; margin-top: 12px"
+          >
+            <i class="ri-loader-4-line spinning"></i>
+            <span class="status-text"></span>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2><i class="ri-information-line"></i> 上传说明</h2>
+      </div>
+      <div class="card-body">
+        <div style="display: flex; flex-direction: column; gap: 16px">
+          <div style="display: flex; gap: 12px; align-items: flex-start">
+            <i
+              class="ri-check-line"
+              style="color: var(--success); font-size: 1.1rem; margin-top: 2px"
+            ></i>
+            <div>
+              <h4 style="font-size: 0.85rem; margin-bottom: 2px">
+                支持的文件格式
+              </h4>
+              <p style="font-size: 0.78rem; color: var(--text-secondary)">
+                文档（PDF、Word、Excel、PPT）、图片、视频、音频、代码、压缩包等
+              </p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: flex-start">
+            <i
+              class="ri-check-line"
+              style="color: var(--success); font-size: 1.1rem; margin-top: 2px"
+            ></i>
+            <div>
+              <h4 style="font-size: 0.85rem; margin-bottom: 2px">
+                文件大小限制
+              </h4>
+              <p style="font-size: 0.78rem; color: var(--text-secondary)">
+                单个文件最大支持 100MB
+              </p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: flex-start">
+            <i
+              class="ri-check-line"
+              style="color: var(--success); font-size: 1.1rem; margin-top: 2px"
+            ></i>
+            <div>
+              <h4 style="font-size: 0.85rem; margin-bottom: 2px">
+                文件存储位置
+              </h4>
+              <p style="font-size: 0.78rem; color: var(--text-secondary)">
+                所有上传的文件保存在本地 /uploads 目录下
+              </p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: flex-start">
+            <i
+              class="ri-check-line"
+              style="color: var(--success); font-size: 1.1rem; margin-top: 2px"
+            ></i>
+            <div>
+              <h4 style="font-size: 0.85rem; margin-bottom: 2px">分类管理</h4>
+              <p style="font-size: 0.78rem; color: var(--text-secondary)">
+                建议为资源选择合适的分类，方便后续查找和管理
+              </p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: flex-start">
+            <i
+              class="ri-close-line"
+              style="color: var(--warning); font-size: 1.1rem; margin-top: 2px"
+            ></i>
+            <div>
+              <h4 style="font-size: 0.85rem; margin-bottom: 2px">
+                AI 分析限制
+              </h4>
+              <p style="font-size: 0.78rem; color: var(--text-secondary)">
+                AI 仅支持分析 PDF 和 TXT
+                文件；其他格式（图片、视频、音频等）将直接以文件名作为标题上传
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tab-batch" class="tab-panel">
+  <div class="grid-2-wide">
+    <div class="card">
+      <div class="card-body">
+        <div class="form-group">
+          <label>选择文件夹 <span class="required">*</span></label>
+          <div
+            class="upload-area"
+            id="folderDropZone"
+            onclick="document.getElementById('folderPicker').click()"
+          >
+            <input
+              type="file"
+              id="folderPicker"
+              webkitdirectory
+              multiple
+              accept="*/*"
+              style="display: none"
+            />
+            <div class="upload-placeholder">
+              <i class="ri-folder-add-line"></i>
+              <p>点击选择文件夹</p>
+              <p class="upload-hint">
+                选中一个文件夹后，系统将列出所有支持格式的文件
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div id="batchFileList" style="display: none">
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              margin-bottom: 12px;
+            "
+          >
+            <div style="display: flex; align-items: center; gap: 12px">
+              <label
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 6px;
+                  cursor: pointer;
+                  user-select: none;
+                  font-size: 0.88rem;
+                "
+              >
+                <input type="checkbox" id="batchSelectAll" checked /> 全选
+              </label>
+              <span
+                id="batchFileCount"
+                class="selected-count"
+                style="font-size: 0.85rem"
+              ></span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px">
+              <label
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 6px;
+                  cursor: pointer;
+                  user-select: none;
+                  font-size: 0.85rem;
+                "
+              >
+                <input type="checkbox" id="batchUseAI" checked />
+                <i class="ri-sparkling-line" style="color: var(--accent)"></i>
+                AI 自动分析
+              </label>
+              <button
+                id="batchUploadBtn"
+                class="btn btn-primary"
+                disabled
+                onclick="startBatchUpload()"
+              >
+                <i class="ri-upload-cloud-2-line"></i> 上传选中 (<span
+                  id="batchSelectedCount"
+                  >0</span
+                >)
+              </button>
+            </div>
+          </div>
+          <div class="batch-table-wrap">
+            <table class="batch-table">
+              <thead>
+                <tr>
+                  <th style="width: 40px"></th>
+                  <th>文件名</th>
+                  <th style="width: 100px">大小</th>
+                  <th style="width: 90px">类型</th>
+                  <th style="width: 120px">状态</th>
+                </tr>
+              </thead>
+              <tbody id="batchFileBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2><i class="ri-information-line"></i> 上传说明</h2>
+      </div>
+      <div class="card-body">
+        <div style="display: flex; flex-direction: column; gap: 16px">
+          <div style="display: flex; gap: 12px; align-items: flex-start">
+            <i
+              class="ri-check-line"
+              style="color: var(--success); font-size: 1.1rem; margin-top: 2px"
+            ></i>
+            <div>
+              <h4 style="font-size: 0.85rem; margin-bottom: 2px">
+                支持的文件格式
+              </h4>
+              <p style="font-size: 0.78rem; color: var(--text-secondary)">
+                文档（PDF、Word、Excel、PPT）、图片、视频、音频、代码、压缩包等
+              </p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: flex-start">
+            <i
+              class="ri-check-line"
+              style="color: var(--success); font-size: 1.1rem; margin-top: 2px"
+            ></i>
+            <div>
+              <h4 style="font-size: 0.85rem; margin-bottom: 2px">
+                文件大小限制
+              </h4>
+              <p style="font-size: 0.78rem; color: var(--text-secondary)">
+                单个文件最大支持 100MB
+              </p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: flex-start">
+            <i
+              class="ri-check-line"
+              style="color: var(--success); font-size: 1.1rem; margin-top: 2px"
+            ></i>
+            <div>
+              <h4 style="font-size: 0.85rem; margin-bottom: 2px">
+                文件存储位置
+              </h4>
+              <p style="font-size: 0.78rem; color: var(--text-secondary)">
+                所有上传的文件保存在本地 /uploads 目录下
+              </p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: flex-start">
+            <i
+              class="ri-check-line"
+              style="color: var(--success); font-size: 1.1rem; margin-top: 2px"
+            ></i>
+            <div>
+              <h4 style="font-size: 0.85rem; margin-bottom: 2px">分类管理</h4>
+              <p style="font-size: 0.78rem; color: var(--text-secondary)">
+                建议为资源选择合适的分类，方便后续查找和管理
+              </p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: flex-start">
+            <i
+              class="ri-close-line"
+              style="color: var(--warning); font-size: 1.1rem; margin-top: 2px"
+            ></i>
+            <div>
+              <h4 style="font-size: 0.85rem; margin-bottom: 2px">
+                AI 分析限制
+              </h4>
+              <p style="font-size: 0.78rem; color: var(--text-secondary)">
+                AI 仅支持分析 PDF 和 TXT
+                文件；其他格式（图片、视频、音频等）将直接以文件名作为标题上传
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js/upload-ai.js') }}"></script>
+<script>
+  function switchTab(name) {
+    document.querySelectorAll(".tab-btn").forEach(function (b) {
+      b.classList.toggle("active", b.dataset.tab === name);
+    });
+    document.querySelectorAll(".tab-panel").forEach(function (p) {
+      p.classList.toggle("active", p.id === "tab-" + name);
+    });
+  }
+
+  var batchFiles = [];
+
+  document
+    .getElementById("folderPicker")
+    .addEventListener("change", function (e) {
+      batchFiles = Array.from(e.target.files);
+      renderBatchList();
+    });
+
+  function renderBatchList() {
+    var tbody = document.getElementById("batchFileBody");
+    tbody.innerHTML = "";
+    if (batchFiles.length === 0) {
+      document.getElementById("batchFileList").style.display = "none";
+      return;
+    }
+    document.getElementById("batchFileList").style.display = "block";
+    batchFiles.forEach(function (f, i) {
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        '<td><input type="checkbox" class="batch-item-cb" data-index="' +
+        i +
+        '" checked onchange="updateBatchCount()"></td>' +
+        '<td><span class="batch-filename">' +
+        escapeHtml(f.name) +
+        "</span></td>" +
+        "<td>" +
+        formatSize(f.size) +
+        "</td>" +
+        '<td><span class="badge-type">' +
+        (f.name.split(".").pop().toUpperCase() || "?") +
+        "</span></td>" +
+        '<td><span class="batch-status pending" id="batchStatus-' +
+        i +
+        '">等待上传</span></td>';
+      tbody.appendChild(tr);
+    });
+    document.getElementById("batchFileCount").textContent =
+      "共 " + batchFiles.length + " 个文件";
+    updateBatchCount();
+  }
+
+  function escapeHtml(s) {
+    var d = document.createElement("div");
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / 1048576).toFixed(1) + " MB";
+  }
+
+  function updateBatchCount() {
+    var checked = document.querySelectorAll(".batch-item-cb:checked").length;
+    document.getElementById("batchSelectedCount").textContent = checked;
+    document.getElementById("batchUploadBtn").disabled = checked === 0;
+    var selAll = document.getElementById("batchSelectAll");
+    if (selAll)
+      selAll.checked =
+        checked === document.querySelectorAll(".batch-item-cb").length;
+  }
+
+  document
+    .getElementById("batchSelectAll")
+    .addEventListener("change", function () {
+      document.querySelectorAll(".batch-item-cb").forEach(function (cb) {
+        cb.checked = this.checked;
+      }, this);
+      updateBatchCount();
+    });
+
+  function startBatchUpload() {
+    var checked = Array.from(document.querySelectorAll(".batch-item-cb:checked"));
+    if (checked.length === 0) return;
+
+    var btn = document.getElementById("batchUploadBtn");
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ri-loader-4-line spinning"></i> 上传中...';
+    var useAI = document.getElementById("batchUseAI").checked;
+    var total = checked.length;
+    var done = 0, failed = 0;
+
+    function uploadNext(idx) {
+      if (idx >= checked.length) {
+        var msg = '上传完成（成功' + done + '，失败' + failed + '）';
+        btn.innerHTML = '<i class="ri-check-line"></i> ' + msg;
+        setTimeout(function () {
+          btn.innerHTML = '<i class="ri-upload-cloud-2-line"></i> 上传选中 (<span id="batchSelectedCount">0</span>)';
+          btn.disabled = false;
+        }, 3000);
+        return;
+      }
+      var cb = checked[idx];
+      var i = parseInt(cb.dataset.index);
+      var fd = new FormData();
+      fd.append("files", batchFiles[i], batchFiles[i].name);
+      fd.append("use_ai", useAI ? "1" : "0");
+      var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+      if (csrfMeta) fd.append("csrf_token", csrfMeta.getAttribute("content"));
+      document.getElementById("batchStatus-" + i).textContent = "上传中";
+      document.getElementById("batchStatus-" + i).className = "batch-status uploading";
+
+      fetch('{{ url_for("resource_batch_upload") }}', { method: "POST", body: fd })
+        .then(function (r) {
+          if (!r.ok) {
+            if (r.status === 413) throw new Error("文件过大，超过服务器限制");
+            throw new Error("服务器错误 " + r.status);
+          }
+          return r.json();
+        })
+        .then(function (json) {
+          if (json.success && json.results && json.results[0]) {
+            var res = json.results[0];
+            if (res.success) {
+              done++;
+              document.getElementById("batchStatus-" + i).textContent = "上传成功";
+              document.getElementById("batchStatus-" + i).className = "batch-status success";
+              var link = document.createElement('a');
+              link.href = '{{ url_for("resource_detail", id="__CODE__") }}'.replace('__CODE__', res.code);
+              link.textContent = batchFiles[i].name;
+              link.target = '_blank';
+              link.style.color = 'var(--primary)';
+              link.style.textDecoration = 'none';
+              var nameCell = document.querySelector('#batchFileBody tr:nth-child(' + (i + 1) + ') td:nth-child(2) .batch-filename');
+              if (nameCell) { nameCell.textContent = ''; nameCell.appendChild(link); }
+            }
+            else { failed++; document.getElementById("batchStatus-" + i).textContent = res.error || "失败"; document.getElementById("batchStatus-" + i).className = "batch-status error"; }
+          } else { failed++; document.getElementById("batchStatus-" + i).textContent = json.error || "失败"; document.getElementById("batchStatus-" + i).className = "batch-status error"; }
+          btn.innerHTML = '<i class="ri-loader-4-line spinning"></i> 上传中... (' + (done + failed) + '/' + total + ')';
+          uploadNext(idx + 1);
+        })
+        .catch(function (err) {
+          failed++;
+          document.getElementById("batchStatus-" + i).textContent = err.message || "网络错误";
+          document.getElementById("batchStatus-" + i).className = "batch-status error";
+          btn.innerHTML = '<i class="ri-loader-4-line spinning"></i> 上传中... (' + (done + failed) + '/' + total + ')';
+          uploadNext(idx + 1);
+        });
+    }
+
+    uploadNext(0);
+  }
+
+  document.querySelector('#tab-single form').addEventListener('submit', function(e) {
+    var btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ri-loader-4-line spinning"></i> 上传中...';
+  });
+</script>
+{% endblock %}

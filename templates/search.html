@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}搜索 - 学习资源管理系统{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('home') }}">首页</a>
+    <i class="ri-arrow-right-s-line"></i>
+    {% if q %}
+    <span class="current">搜索：{{ q }}</span>
+    {% else %}
+    <span class="current">搜索</span>
+    {% endif %}
+</div>
+<div class="page-header">
+    <div>
+        <h1><i class="ri-search-line"></i>搜索结果</h1>
+        {% if q %}
+        <p class="page-subtitle">关键词：<span class="search-keyword">"{{ q }}"</span>，共找到 {{ total }} 个结果</p>
+        {% else %}
+        <p class="page-subtitle">请输入搜索关键词</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if q %}
+<div class="filter-bar" style="margin-bottom:16px;">
+    <div class="filter-left" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;width:100%;">
+        <form method="get" action="{{ url_for('search') }}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;width:100%;">
+            <input type="hidden" name="q" value="{{ q }}">
+            <div style="display:flex;align-items:center;gap:6px;">
+                <label style="font-size:.82rem;color:var(--text-secondary);white-space:nowrap;">类型</label>
+                <select name="file_type" class="form-control" style="width:auto;min-width:100px;" onchange="this.form.submit()">
+                    <option value="">全部类型</option>
+                    <option value="pdf" {% if file_type == 'pdf' %}selected{% endif %}>PDF</option>
+                    <option value="doc" {% if file_type == 'doc' %}selected{% endif %}>文档</option>
+                    <option value="image" {% if file_type == 'image' %}selected{% endif %}>图片</option>
+                    <option value="video" {% if file_type == 'video' %}selected{% endif %}>视频</option>
+                    <option value="audio" {% if file_type == 'audio' %}selected{% endif %}>音频</option>
+                    <option value="code" {% if file_type == 'code' %}selected{% endif %}>代码</option>
+                    <option value="archive" {% if file_type == 'archive' %}selected{% endif %}>压缩包</option>
+                </select>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+                <label style="font-size:.82rem;color:var(--text-secondary);white-space:nowrap;">排序</label>
+                <select name="sort" class="form-control" style="width:auto;min-width:120px;" onchange="this.form.submit()">
+                    <option value="created_at" {% if sort == 'created_at' %}selected{% endif %}>最新上传</option>
+                    <option value="created_at_asc" {% if sort == 'created_at_asc' %}selected{% endif %}>最早上传</option>
+                    <option value="downloads" {% if sort == 'downloads' %}selected{% endif %}>最多下载</option>
+                    <option value="views" {% if sort == 'views' %}selected{% endif %}>最多浏览</option>
+                    <option value="title" {% if sort == 'title' %}selected{% endif %}>名称 A-Z</option>
+                    <option value="title_desc" {% if sort == 'title_desc' %}selected{% endif %}>名称 Z-A</option>
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+    {% if resources %}
+    <div class="resource-grid">
+        {% for r in resources %}
+        <div class="resource-card">
+            <div class="resource-card-top">
+                <div class="resource-badge badge-{{ r.file_type }}">
+                    {% if r.file_type == 'image' %}<i class="ri-image-line"></i> 图片
+                    {% elif r.file_type == 'video' %}<i class="ri-video-line"></i> 视频
+                    {% elif r.file_type == 'audio' %}<i class="ri-music-line"></i> 音频
+                    {% elif r.file_type == 'pdf' %}<i class="ri-file-pdf-line"></i> PDF
+                    {% elif r.file_type == 'doc' %}<i class="ri-file-word-line"></i> 文档
+                    {% elif r.file_type == 'code' %}<i class="ri-code-s-slash-line"></i> 代码
+                    {% elif r.file_type == 'archive' %}<i class="ri-file-zip-line"></i> 压缩包
+                    {% else %}<i class="ri-file-line"></i> 其他{% endif %}
+                </div>
+            </div>
+            <div class="resource-card-body">
+                <h3 class="resource-card-title"><a href="{{ url_for('resource_detail', id=r.code) }}">{{ r.title | highlight(q) | safe }}</a></h3>
+                <p class="resource-card-desc">{{ (r.description or '暂无描述') | highlight(q) | safe }}</p>
+                <div class="resource-card-meta">
+                    <span><i class="ri-folder-line"></i> {{ r.category_name or '未分类' }}</span>
+                    <span><i class="ri-database-2-line"></i> {{ r.file_size | filesize }}</span>
+                </div>
+            </div>
+            <div class="resource-card-footer">
+                <div class="resource-stats">
+                    <span><i class="ri-download-line"></i> {{ r.downloads }}</span>
+                    <span><i class="ri-eye-line"></i> {{ r.views }}</span>
+                </div>
+                <div class="resource-actions">
+                    <a href="{{ url_for('resource_download', resource_id=r.code) }}" class="action-btn" title="下载"><i class="ri-download-line"></i></a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if total_pages > 1 %}
+    <div class="pagination">
+        {% if page > 1 %}
+        <a href="{{ url_for('search', q=q, sort=sort, file_type=file_type, page=page-1) }}" class="page-btn"><i class="ri-arrow-left-s-line"></i> 上一页</a>
+        {% endif %}
+        <div class="page-numbers">
+            {% for p in range(1, total_pages + 1) %}
+                {% if p == page %}
+                <span class="page-btn active">{{ p }}</span>
+                {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+                <a href="{{ url_for('search', q=q, sort=sort, file_type=file_type, page=p) }}" class="page-btn">{{ p }}</a>
+                {% elif p == page - 3 or p == page + 3 %}
+                <span class="page-dots">...</span>
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% if page < total_pages %}
+        <a href="{{ url_for('search', q=q, sort=sort, file_type=file_type, page=page+1) }}" class="page-btn">下一页 <i class="ri-arrow-right-s-line"></i></a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+        <i class="ri-search-line"></i>
+        <h3>未找到相关资源</h3>
+        <p>没有与 <span class="search-keyword">"{{ q }}"</span> 匹配的资源</p>
+        <p style="color:var(--text-muted);font-size:.85rem;">试试其他关键词或调整筛选条件</p>
+    </div>
+    {% endif %}
+{% else %}
+<div class="empty-state">
+    <i class="ri-search-line"></i>
+    <h3>输入关键词开始搜索</h3>
+    <p style="color:var(--text-muted);">支持搜索资源标题、描述和文件名</p>
+</div>
+{% endif %}
+{% endblock %}
