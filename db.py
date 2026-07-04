@@ -1,3 +1,4 @@
+from sqlite3 import Connection, Cursor
 import os
 import sqlite3
 import string
@@ -6,25 +7,26 @@ from werkzeug.security import generate_password_hash
 from flask import g, current_app
 
 
-def get_db():
+def get_db() -> Connection:
     if 'db' not in g:
         g.db = sqlite3.connect(current_app.config['DATABASE'])
         g.db.row_factory = sqlite3.Row
     return g.db
 
 
-def close_db(error=None):
+def close_db(_error: BaseException | None = None) -> None:
     db = g.pop('db', None)
     if db is not None:
         db.close()
 
 
-def init_db(db_path=None):
+def init_db(db_path: str | None = None) -> None:
     if db_path is None:
         db_path = current_app.config['DATABASE']
-    os.makedirs(os.path.dirname(db_path), exist_ok=True)
-    db = sqlite3.connect(db_path)
-    cursor = db.cursor()
+    assert db_path is not None
+    os.makedirs(name=os.path.dirname(db_path), exist_ok=True)
+    db: Connection = sqlite3.connect(db_path)
+    cursor: Cursor = db.cursor()
 
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (

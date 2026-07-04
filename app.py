@@ -95,11 +95,4 @@ def too_large(e):
 if __name__ == '__main__':
     init_db(app.config['DATABASE'])
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    logger.info('\033[32m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m')
-    logger.info('\033[32m  LRS 服务启动\033[0m')
-    logger.info('\033[32m  PID: %s\033[0m', os.getpid())
-    logger.info('\033[32m  地址: http://0.0.0.0:5000\033[0m')
-    logger.info('\033[32m  数据库: %s\033[0m', app.config['DATABASE'])
-    logger.info('\033[32m  上传目录: %s\033[0m', app.config['UPLOAD_FOLDER'])
-    logger.info('\033[32m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m')
     app.run(debug=True, host='0.0.0.0', port=5000)
